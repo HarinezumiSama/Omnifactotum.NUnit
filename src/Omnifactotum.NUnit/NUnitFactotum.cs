@@ -160,10 +160,7 @@ namespace Omnifactotum.NUnit
                 {
                     var args = normalizedArguments.Select((item, index) => item[indices[index]]).ToArray();
                     var testCase = new TestCaseData(args);
-                    if (processTestCase != null)
-                    {
-                        processTestCase(testCase);
-                    }
+                    processTestCase?.Invoke(testCase);
 
                     result.Add(testCase);
 
@@ -206,9 +203,7 @@ namespace Omnifactotum.NUnit
         ///     A list of the test cases generated.
         /// </returns>
         public static List<TestCaseData> GenerateCombinatorialTestCases([NotNull] params object[] arguments)
-        {
-            return GenerateCombinatorialTestCases(null, arguments);
-        }
+            => GenerateCombinatorialTestCases(null, arguments);
 
         /// <summary>
         ///     Returns the specified value if is not null;
@@ -322,12 +317,10 @@ namespace Omnifactotum.NUnit
                 [NotNull] Expression<Func<TObject, TProperty>> propertyGetterExpression,
                 PropertyAccessMode expectedAccessMode,
                 MethodAttributes visibleAccessorAttribute = MethodAttributes.Public)
-            {
-                AssertReadableWritable<TObject, TProperty>(
+                => AssertReadableWritable<TObject, TProperty>(
                     propertyGetterExpression,
                     expectedAccessMode,
                     visibleAccessorAttribute);
-            }
 
             #endregion
         }

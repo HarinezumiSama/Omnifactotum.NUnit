@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using NUnit.Framework;
 
 namespace Omnifactotum.NUnit
@@ -12,22 +10,13 @@ namespace Omnifactotum.NUnit
     /// </summary>
     public abstract class TestCasesBase : IEnumerable<TestCaseData>
     {
-        #region IEnumerable<TestCaseData> Members
-
         /// <summary>
         ///     Returns an enumerator that iterates through the collection.
         /// </summary>
         /// <returns>
         ///     A <see cref="IEnumerator{TestCaseData}"/> that can be used to iterate through the collection.
         /// </returns>
-        public IEnumerator<TestCaseData> GetEnumerator()
-        {
-            return GetCases().AssertNotNull().GetEnumerator();
-        }
-
-        #endregion
-
-        #region IEnumerable Members
+        public IEnumerator<TestCaseData> GetEnumerator() => GetCases().AssertNotNull().GetEnumerator();
 
         /// <summary>
         ///     Returns an enumerator that iterates through a collection.
@@ -35,14 +24,7 @@ namespace Omnifactotum.NUnit
         /// <returns>
         ///     An <see cref="IEnumerator"/> object that can be used to iterate through the collection.
         /// </returns>
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
-        #endregion
-
-        #region Protected Methods
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         /// <summary>
         ///     Gets the collection of test cases.
@@ -51,7 +33,5 @@ namespace Omnifactotum.NUnit
         ///     The collection of test cases.
         /// </returns>
         protected abstract IEnumerable<TestCaseData> GetCases();
-
-        #endregion
     }
 }
