@@ -51,14 +51,14 @@ namespace Omnifactotum.NUnit
                 MethodAttributes.MemberAccessMask.GetQualifiedName());
 
             var propertyInfo = Factotum.For<TObject>.GetPropertyInfo(propertyGetterExpression);
-            Assert.IsNotNull(propertyInfo);
+            Assert.That(propertyInfo, Is.Not.Null);
 
             var expectedReadability = expectedAccessMode != PropertyAccessMode.WriteOnly;
             var actualReadability = propertyInfo.CanRead
                 && AccessAttributesMatch(propertyInfo.GetGetMethod(true), visibleAccessorAttribute);
-            Assert.AreEqual(
-                expectedReadability,
+            Assert.That(
                 actualReadability,
+                Is.EqualTo(expectedReadability),
                 "The property '{0}{1}{2}' MUST {3}be readable.",
                 propertyInfo.DeclaringType.EnsureNotNull().GetFullName(),
                 Type.Delimiter,
@@ -68,9 +68,9 @@ namespace Omnifactotum.NUnit
             var expectedWritability = expectedAccessMode != PropertyAccessMode.ReadOnly;
             var actualWritability = propertyInfo.CanWrite
                 && AccessAttributesMatch(propertyInfo.GetSetMethod(true), visibleAccessorAttribute);
-            Assert.AreEqual(
-                expectedWritability,
+            Assert.That(
                 actualWritability,
+                Is.EqualTo(expectedWritability),
                 "The property '{0}{1}{2}' MUST {3}be writable.",
                 propertyInfo.DeclaringType.EnsureNotNull().GetFullName(),
                 Type.Delimiter,
