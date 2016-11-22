@@ -46,6 +46,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MappingAccordancesTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <None Include="..\SolutionItems\Omnifactotum.NUnit.snk">
       <Link>Properties\Omnifactotum.NUnit.snk</Link>

@@ -59,6 +59,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssertEqualityExpectation.cs" />
+    <Compile Include="ConstraintCreator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <None Include="..\SolutionItems\Omnifactotum.NUnit.snk">
       <Link>Properties\Omnifactotum.NUnit.snk</Link>
@@ -70,6 +71,8 @@
       <Link>Properties\Generated.GlobalVersion.cs</Link>
     </Compile>
     <Compile Include="PropertyAccessMode.cs" />
+    <Compile Include="MappingAccordances.cs" />
+    <Compile Include="MappingAccordances.Helper.cs" />
     <Compile Include="TestCasesBase.cs" />
     <Compile Include="NUnitFactotum.cs" />
     <None Include="packages.config" />
