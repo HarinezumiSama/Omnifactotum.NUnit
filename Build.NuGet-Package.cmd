@@ -17,7 +17,10 @@ set NG_PROJECT_PATH=%SRC_PROJECT_PATH%
 set OUT_DIR=%~dp0\bin\AnyCpu\Release
 set PKG_PATH=%~dp0\bin\NuGet
 
-if "%NUnitBinDir%" equ "" set NUnitBinDir=C:\Program Files (x86)\NUnit\bin
+set AppDir=%ProgramFiles%
+if /i "%PROCESSOR_ARCHITECTURE%" equ "AMD64" set AppDir=%ProgramFiles(x86)%
+
+if "%NUnitBinDir%" equ "" set NUnitBinDir=%AppDir%\NUnit\bin
 set NUNIT_CONSOLE=%NUnitBinDir%\nunit-console.exe
 
 if not exist "%NUNIT_CONSOLE%" (echo * ERROR: NUnit Console executable is not found at "%NUNIT_CONSOLE%". ^(Is the NUnitBinDir environment variable properly set^?^) & goto ERROR)
@@ -47,7 +50,7 @@ echo * Cleaning the output directory - DONE.
 
 echo.
 echo * Building project...
-"%SystemRoot%\Microsoft.NET\Framework\v4.0.30319\MSBuild.exe" "%SRC_SOLUTION_PATH%" /target:Rebuild /p:Configuration="Release" /p:Platform="Any CPU" || goto ERROR
+"%AppDir%\MSBuild\14.0\Bin\MSBuild.exe" "%SRC_SOLUTION_PATH%" /target:Rebuild /p:Configuration="Release" /p:Platform="Any CPU" || goto ERROR
 echo * Building project - DONE.
 
 echo.

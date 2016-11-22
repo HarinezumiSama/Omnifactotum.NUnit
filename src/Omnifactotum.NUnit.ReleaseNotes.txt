@@ -1,3 +1,6 @@
+--- Changes in 0.1.0.7 (since 0.1.0.2) ---
+* Introduced the MappingAccordances<TSource, TDestination> class
+
 --- First published version 0.1.0.2 ---
 * Introduced the NUnitFactotum helper class
 * Introduced the TestCasesBase abstract class
