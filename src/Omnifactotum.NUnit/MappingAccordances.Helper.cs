@@ -52,9 +52,9 @@ namespace Omnifactotum.NUnit
         ///     The type of the source and destination properties.
         /// </typeparam>
         public delegate string AssertionFailedMessageCreator<in TValue>(
-            string sourceExpression,
-            TValue sourceValue,
-            string destinationExpression,
-            TValue destinationValue);
+            [NotNull] string sourceExpression,
+            [CanBeNull] TValue sourceValue,
+            [NotNull] string destinationExpression,
+            [CanBeNull] TValue destinationValue);
     }
 }
