@@ -50,7 +50,7 @@ echo * Cleaning the output directory - DONE.
 
 echo.
 echo * Building project...
-"%AppDir%\MSBuild\14.0\Bin\MSBuild.exe" "%SRC_SOLUTION_PATH%" /target:Rebuild /p:Configuration="Release" /p:Platform="Any CPU" || goto ERROR
+"%AppDir%\MSBuild\14.0\Bin\MSBuild.exe" "%SRC_SOLUTION_PATH%" /target:Rebuild /p:Configuration="Release" /p:Platform="Any CPU" /DetailedSummary || goto ERROR
 echo * Building project - DONE.
 
 echo.
@@ -78,7 +78,7 @@ echo * (Re)creating directory for the package - DONE.
 echo.
 echo * Creating package...
 :: [vitalii.maklai] The backslash (\) before the double quote (") must be escaped with itself (\) for the command line parameters to be parsed properly
-nuget pack "%NG_PROJECT_PATH%" -Verbosity detailed -OutputDirectory "%PKG_PATH%\\" -Symbols -Properties Configuration=Release;Platform=AnyCPU;PkgReleaseNotes="!PkgReleaseNotes!" || goto ERROR
+nuget pack "%NG_PROJECT_PATH%" -Verbosity detailed -OutputDirectory "%PKG_PATH%\\" -Symbols -MSBuildVersion 14 -Properties Configuration=Release;Platform=AnyCPU;PkgReleaseNotes="!PkgReleaseNotes!" || goto ERROR
 echo * Creating package - DONE.
 
 echo.
