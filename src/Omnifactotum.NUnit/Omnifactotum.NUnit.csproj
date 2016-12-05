@@ -60,6 +60,7 @@
   <ItemGroup>
     <Compile Include="AssertEqualityExpectation.cs" />
     <Compile Include="ConstraintCreator.cs" />
+    <Compile Include="GenericTestCasesBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <None Include="..\SolutionItems\Omnifactotum.NUnit.snk">
       <Link>Properties\Omnifactotum.NUnit.snk</Link>
@@ -75,6 +76,7 @@
     <Compile Include="MappingAccordances.Helper.cs" />
     <Compile Include="TestCasesBase.cs" />
     <Compile Include="NUnitFactotum.cs" />
+    <None Include="Omnifactotum.NUnit.nuspec" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
