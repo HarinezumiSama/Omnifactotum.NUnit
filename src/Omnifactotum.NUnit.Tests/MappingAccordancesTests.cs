@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using System;
+using NUnit.Framework;
 
 namespace Omnifactotum.NUnit.Tests
 {
@@ -34,6 +35,38 @@ namespace Omnifactotum.NUnit.Tests
                 FullName = sampleSource1.Name,
                 Remaining = 100 - sampleSource1.Progress
             };
+
+            Assert.That(
+                () => mappingAccordances.AssertAll(sampleSource1, null),
+                Throws.TypeOf<NullReferenceException>());
+
+            Assert.That(
+                () => mappingAccordances.AssertAll(null, sampleDestination1),
+                Throws.TypeOf<NullReferenceException>());
+
+            Assert.That(
+                () => mappingAccordances.AssertAll(null, null),
+                Throws.TypeOf<NullReferenceException>());
+
+            mappingAccordances.RegisterNullReferenceCheck();
+
+            Assert.That(
+                () => mappingAccordances.AssertAll(sampleSource1, null),
+                Throws.TypeOf<AssertionException>()
+                    .With
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring("Both the source and destination must be either null or non-null."));
+
+            Assert.That(
+                () => mappingAccordances.AssertAll(null, sampleDestination1),
+                Throws.TypeOf<AssertionException>()
+                    .With
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring("Both the source and destination must be either null or non-null."));
+
+            Assert.That(
+                () => mappingAccordances.AssertAll(null, null),
+                Throws.Nothing);
 
             Assert.That(() => mappingAccordances.AssertAll(sampleSource1, sampleDestination1), Throws.Nothing);
 
