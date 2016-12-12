@@ -11,10 +11,20 @@ namespace Omnifactotum.NUnit.Tests
         [Test]
         public void TestSimpleScenario()
         {
+            var innerMappingAccordances = MappingAccordances
+                .From<SampleInnerSource>
+                .To<SampleInnerDestination>()
+                .RegisterNullReferenceCheck()
+                .Register(source => source.Text, destination => destination.Message);
+
+            Assert.That(innerMappingAccordances.IsNullReferenceCheckRegistered, Is.True);
+            Assert.That(innerMappingAccordances.Count, Is.EqualTo(1));
+
             var mappingAccordances = MappingAccordances
                 .From<SampleSource>
                 .To<SampleDestination>()
                 .Register(source => source.Name, destination => destination.FullName)
+                .Register(source => source.Data, destination => destination.Info, innerMappingAccordances)
                 .Register(
                     source => source.Progress,
                     destination => destination.Remaining,
@@ -22,18 +32,21 @@ namespace Omnifactotum.NUnit.Tests
                     (sourceExpression, sourceValue, destinationExpression, destinationValue) =>
                         $@"The percentage values must complement each other: {sourceExpression} and {destinationExpression}.");
 
-            Assert.That(mappingAccordances.Count, Is.EqualTo(2));
+            Assert.That(mappingAccordances.IsNullReferenceCheckRegistered, Is.False);
+            Assert.That(mappingAccordances.Count, Is.EqualTo(3));
 
             var sampleSource1 = new SampleSource
             {
                 Name = "Job1",
-                Progress = 45
+                Progress = 45,
+                Data = new SampleInnerSource { Text = "Hello World!" }
             };
 
             var sampleDestination1 = new SampleDestination
             {
                 FullName = sampleSource1.Name,
-                Remaining = 100 - sampleSource1.Progress
+                Remaining = 100 - sampleSource1.Progress,
+                Info = new SampleInnerDestination { Message = sampleSource1.Data?.Text }
             };
 
             Assert.That(
@@ -49,6 +62,7 @@ namespace Omnifactotum.NUnit.Tests
                 Throws.TypeOf<NullReferenceException>());
 
             mappingAccordances.RegisterNullReferenceCheck();
+            Assert.That(mappingAccordances.IsNullReferenceCheckRegistered, Is.True);
 
             Assert.That(
                 () => mappingAccordances.AssertAll(sampleSource1, null),
@@ -73,10 +87,16 @@ namespace Omnifactotum.NUnit.Tests
             var sampleSource2 = new SampleSource
             {
                 Name = "Job1",
-                Progress = 45
+                Progress = 45,
+                Data = null
             };
 
-            var sampleDestination2 = new SampleDestination { FullName = "Job1", Remaining = sampleSource2.Progress };
+            var sampleDestination2 = new SampleDestination
+            {
+                FullName = sampleSource2.Name,
+                Remaining = sampleSource2.Progress,
+                Info = null
+            };
 
             Assert.That(
                 () => mappingAccordances.AssertAll(sampleSource2, sampleDestination2),
@@ -88,13 +108,15 @@ namespace Omnifactotum.NUnit.Tests
             var sampleSource3 = new SampleSource
             {
                 Name = "Job1",
-                Progress = 35
+                Progress = 35,
+                Data = null
             };
 
             var sampleDestination3 = new SampleDestination
             {
                 FullName = "System Job1",
-                Remaining = 100 - sampleSource3.Progress
+                Remaining = 100 - sampleSource3.Progress,
+                Info = null
             };
 
             Assert.That(
@@ -102,7 +124,56 @@ namespace Omnifactotum.NUnit.Tests
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring($".{nameof(SampleSource.Name)}")
+                    .And
+                    .Property(nameof(AssertionException.Message))
                     .ContainsSubstring($".{nameof(SampleDestination.FullName)}"));
+
+            var sampleSource4 = new SampleSource
+            {
+                Name = "Job1",
+                Progress = 13,
+                Data = new SampleInnerSource { Text = "Text" }
+            };
+
+            var sampleDestination4 = new SampleDestination
+            {
+                FullName = sampleSource4.Name,
+                Remaining = 100 - sampleSource4.Progress,
+                Info = new SampleInnerDestination { Message = "Message" }
+            };
+
+            Assert.That(
+                () => mappingAccordances.AssertAll(sampleSource4, sampleDestination4),
+                Throws.TypeOf<AssertionException>()
+                    .With
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring($".{nameof(SampleInnerSource.Text)}")
+                    .And
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring($".{nameof(SampleInnerDestination.Message)}"));
+        }
+
+        [Test]
+        public void TestAssertAllFailsWhenNoMapping()
+        {
+            var mappingAccordances = MappingAccordances.From<SampleSource>.To<SampleDestination>();
+
+            Assert.That(
+                () => mappingAccordances.AssertAll(null, null),
+                Throws.TypeOf<AssertionException>()
+                    .With
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring(MappingAccordances.NoMappingsMessage));
+
+            mappingAccordances.RegisterNullReferenceCheck();
+
+            Assert.That(
+                () => mappingAccordances.AssertAll(null, null),
+                Throws.TypeOf<AssertionException>()
+                    .With
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring(MappingAccordances.NoMappingsMessage));
         }
 
         #endregion
@@ -122,6 +193,25 @@ namespace Omnifactotum.NUnit.Tests
                 get;
                 set;
             }
+
+            public SampleInnerSource Data
+            {
+                get;
+                set;
+            }
+        }
+
+        #endregion
+
+        #region SampleInnerSource Class
+
+        private sealed class SampleInnerSource
+        {
+            public string Text
+            {
+                get;
+                set;
+            }
         }
 
         #endregion
@@ -137,6 +227,25 @@ namespace Omnifactotum.NUnit.Tests
             }
 
             public int Remaining
+            {
+                get;
+                set;
+            }
+
+            public SampleInnerDestination Info
+            {
+                get;
+                set;
+            }
+        }
+
+        #endregion
+
+        #region SampleInnerDestination Class
+
+        private sealed class SampleInnerDestination
+        {
+            public string Message
             {
                 get;
                 set;
