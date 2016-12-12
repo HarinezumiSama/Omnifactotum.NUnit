@@ -99,7 +99,7 @@ namespace Omnifactotum.NUnit
 
         /// <summary>
         ///     Registers a mapping using the specified source and destination property selectors and
-        ///     specified constraint and error message.
+        ///     the specified constraint and error message.
         /// </summary>
         /// <param name="sourcePropertySelectorExpression">
         ///     The expression selecting the property in a source object.
@@ -170,7 +170,55 @@ namespace Omnifactotum.NUnit
 
         /// <summary>
         ///     Registers a mapping using the specified source and destination property selectors and
-        ///     <see cref="Is.EqualTo"/> constraint.
+        ///     the specified inner <see cref="MappingAccordances{TSourceValue,TDestinationValue}"/>.
+        /// </summary>
+        /// <param name="sourcePropertySelectorExpression">
+        ///     The expression selecting the property in a source object.
+        /// </param>
+        /// <param name="destinationPropertySelectorExpression">
+        ///     The expression selecting the property in a destination object.
+        /// </param>
+        /// <param name="innerMappingAccordances">
+        ///     An instance of <see cref="MappingAccordances{TSourceValue,TDestinationValue}"/>
+        ///     specifying the mapping for the corresponding properties of the source and destination objects.
+        /// </param>
+        /// <typeparam name="TSourceValue">
+        ///     The type of a value produced by the property selector on the source object.
+        /// </typeparam>
+        /// <typeparam name="TDestinationValue">
+        ///     The type of a value produced by the property selector on the destination object.
+        /// </typeparam>
+        /// <returns>
+        ///     This <see cref="MappingAccordances{TSource,TDestination}"/> instance.
+        /// </returns>
+        [NotNull]
+        public MappingAccordances<TSource, TDestination> Register<TSourceValue, TDestinationValue>(
+            [NotNull] Expression<Func<TSource, TSourceValue>> sourcePropertySelectorExpression,
+            [NotNull] Expression<Func<TDestination, TDestinationValue>> destinationPropertySelectorExpression,
+            [NotNull] MappingAccordances<TSourceValue, TDestinationValue> innerMappingAccordances)
+        {
+            Assert.That(sourcePropertySelectorExpression, Is.Not.Null);
+            Assert.That(destinationPropertySelectorExpression, Is.Not.Null);
+            Assert.That(innerMappingAccordances, Is.Not.Null);
+
+            var sourcePropertySelector = sourcePropertySelectorExpression.Compile();
+            var destinationPropertySelector = destinationPropertySelectorExpression.Compile();
+
+            _assertions.Add(
+                (source, destination) =>
+                {
+                    var sourcePropertyValue = sourcePropertySelector(source);
+                    var destinationPropertyValue = destinationPropertySelector(destination);
+
+                    innerMappingAccordances.AssertAll(sourcePropertyValue, destinationPropertyValue);
+                });
+
+            return this;
+        }
+
+        /// <summary>
+        ///     Registers a mapping using the specified source and destination property selectors and
+        ///     the <see cref="Is.EqualTo"/> constraint.
         /// </summary>
         /// <param name="sourcePropertySelectorExpression">
         ///     The expression selecting the property in a source object.
@@ -208,10 +256,7 @@ namespace Omnifactotum.NUnit
         /// </param>
         public void AssertAll([CanBeNull] TSource source, [CanBeNull] TDestination destination)
         {
-            Assert.That(
-                _assertions.Count,
-                Is.Not.EqualTo(0),
-                "There must be at least one registered mapping to assert.");
+            Assert.That(_assertions.Count, Is.Not.EqualTo(0), MappingAccordances.NoMappingsMessage);
 
             var allNull = _nullReferenceAssertion?.Invoke(source, destination);
             if (allNull.GetValueOrDefault())
@@ -242,9 +287,6 @@ namespace Omnifactotum.NUnit
             return result;
         }
 
-        private static bool IsNullReference<T>(T value)
-        {
-            return !typeof(T).IsValueType && ReferenceEquals(value, null);
-        }
+        private static bool IsNullReference<T>(T value) => !typeof(T).IsValueType && ReferenceEquals(value, null);
     }
 }

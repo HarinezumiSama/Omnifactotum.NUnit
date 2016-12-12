@@ -8,6 +8,8 @@ namespace Omnifactotum.NUnit
     /// </summary>
     public static class MappingAccordances
     {
+        internal static readonly string NoMappingsMessage = "There must be at least one registered mapping to assert.";
+
         /// <summary>
         ///     Provides the fluid syntax of creating instances of the
         ///     <see cref="MappingAccordances{TSource,TDestination}"/> class.
