@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using NUnit.Framework;
 
 namespace Omnifactotum.NUnit.Tests
@@ -9,142 +10,155 @@ namespace Omnifactotum.NUnit.Tests
         #region Tests
 
         [Test]
-        public void TestSimpleScenario()
+        public void TestAssertAllAgainstNullReferenceCheck()
         {
-            var innerMappingAccordances = MappingAccordances
-                .From<SampleInnerSource>
-                .To<SampleInnerDestination>()
-                .RegisterNullReferenceCheck()
-                .Register(source => source.Text, destination => destination.Message);
+            const string NullMismatchMessage = @"Both the source and destination must be either null or non-null.";
 
-            Assert.That(innerMappingAccordances.IsNullReferenceCheckRegistered, Is.True);
-            Assert.That(innerMappingAccordances.Count, Is.EqualTo(1));
-
-            var mappingAccordances = MappingAccordances
-                .From<SampleSource>
-                .To<SampleDestination>()
-                .Register(source => source.Name, destination => destination.FullName)
-                .Register(source => source.Data, destination => destination.Info, innerMappingAccordances)
-                .Register(
-                    source => source.Progress,
-                    destination => destination.Remaining,
-                    expectedValue => Is.EqualTo(100 - expectedValue),
-                    (sourceExpression, sourceValue, destinationExpression, destinationValue) =>
-                        $@"The percentage values must complement each other: {sourceExpression} and {destinationExpression}.");
-
-            Assert.That(mappingAccordances.IsNullReferenceCheckRegistered, Is.False);
-            Assert.That(mappingAccordances.Count, Is.EqualTo(3));
-
-            var sampleSource1 = new SampleSource
-            {
-                Name = "Job1",
-                Progress = 45,
-                Data = new SampleInnerSource { Text = "Hello World!" }
-            };
-
-            var sampleDestination1 = new SampleDestination
-            {
-                FullName = sampleSource1.Name,
-                Remaining = 100 - sampleSource1.Progress,
-                Info = new SampleInnerDestination { Message = sampleSource1.Data?.Text }
-            };
+            var testee = CreateTestee();
 
             Assert.That(
-                () => mappingAccordances.AssertAll(sampleSource1, null),
+                () => testee.AssertAll(new SampleSource(), null),
                 Throws.TypeOf<NullReferenceException>());
 
             Assert.That(
-                () => mappingAccordances.AssertAll(null, sampleDestination1),
+                () => testee.AssertAll(null, new SampleDestination()),
                 Throws.TypeOf<NullReferenceException>());
 
             Assert.That(
-                () => mappingAccordances.AssertAll(null, null),
+                () => testee.AssertAll(null, null),
                 Throws.TypeOf<NullReferenceException>());
 
-            mappingAccordances.RegisterNullReferenceCheck();
-            Assert.That(mappingAccordances.IsNullReferenceCheckRegistered, Is.True);
+            testee.RegisterNullReferenceCheck();
+            Assert.That(testee.IsNullReferenceCheckRegistered, Is.True);
 
             Assert.That(
-                () => mappingAccordances.AssertAll(sampleSource1, null),
+                () => testee.AssertAll(new SampleSource(), null),
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring("Both the source and destination must be either null or non-null."));
+                    .ContainsSubstring(NullMismatchMessage));
 
             Assert.That(
-                () => mappingAccordances.AssertAll(null, sampleDestination1),
+                () => testee.AssertAll(null, new SampleDestination()),
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring("Both the source and destination must be either null or non-null."));
+                    .ContainsSubstring(NullMismatchMessage));
 
-            Assert.That(
-                () => mappingAccordances.AssertAll(null, null),
-                Throws.Nothing);
+            Assert.That(() => testee.AssertAll(null, null), Throws.Nothing);
+        }
 
-            Assert.That(() => mappingAccordances.AssertAll(sampleSource1, sampleDestination1), Throws.Nothing);
+        [Test]
+        public void TestAssertAllWhenObjectsMatch()
+        {
+            var testee = CreateTestee();
 
-            var sampleSource2 = new SampleSource
+            var source = new SampleSource
             {
                 Name = "Job1",
-                Progress = 45,
-                Data = null
+                Progress = 1,
+                Data = new SampleInnerSource { Text = "Hello World!" },
+                Items = new[] { new SampleSourceItem { Text = "Item text" } }
             };
 
-            var sampleDestination2 = new SampleDestination
+            var destination = new SampleDestination
             {
-                FullName = sampleSource2.Name,
-                Remaining = sampleSource2.Progress,
-                Info = null
+                FullName = source.Name,
+                Remaining = 100 - source.Progress,
+                Info = new SampleInnerDestination { Message = source.Data.Text },
+                Datas = new[] { new SampleDestinationItem { TextData = source.Items[0].Text } }
+            };
+
+            Assert.That(() => testee.AssertAll(source, destination), Throws.Nothing);
+        }
+
+        [Test]
+        public void TestAssertAllWhenPropertyMismatchesUsingCustomRule()
+        {
+            var testee = CreateTestee();
+
+            var source = new SampleSource
+            {
+                Name = "Job2",
+                Progress = 2,
+                Data = null,
+                Items = null
+            };
+
+            var destination = new SampleDestination
+            {
+                FullName = source.Name,
+                Remaining = source.Progress,
+                Info = null,
+                Datas = null
             };
 
             Assert.That(
-                () => mappingAccordances.AssertAll(sampleSource2, sampleDestination2),
+                () => testee.AssertAll(source, destination),
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
                     .ContainsSubstring("The percentage values must complement each other"));
+        }
 
-            var sampleSource3 = new SampleSource
+        [Test]
+        public void TestAssertAllWhenPropertyValueIsNotEqual()
+        {
+            var testee = CreateTestee();
+
+            var source = new SampleSource
             {
-                Name = "Job1",
-                Progress = 35,
-                Data = null
+                Name = "Job3",
+                Progress = 3,
+                Data = null,
+                Items = null
             };
 
-            var sampleDestination3 = new SampleDestination
+            var destination = new SampleDestination
             {
-                FullName = "System Job1",
-                Remaining = 100 - sampleSource3.Progress,
-                Info = null
+                FullName = "System" + source.Name,
+                Remaining = 100 - source.Progress,
+                Info = null,
+                Datas = null
             };
 
             Assert.That(
-                () => mappingAccordances.AssertAll(sampleSource3, sampleDestination3),
+                () => testee.AssertAll(source, destination),
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
                     .ContainsSubstring($".{nameof(SampleSource.Name)}")
                     .And
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring($".{nameof(SampleDestination.FullName)}"));
+                    .ContainsSubstring($".{nameof(SampleDestination.FullName)}")
+                    .And
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring("The values are expected to be equal:"));
+        }
 
-            var sampleSource4 = new SampleSource
+        [Test]
+        public void TestAssertAllWhenInnerComplexPropertyMismatches()
+        {
+            var testee = CreateTestee();
+
+            var source = new SampleSource
             {
-                Name = "Job1",
-                Progress = 13,
-                Data = new SampleInnerSource { Text = "Text" }
+                Name = "Job4",
+                Progress = 4,
+                Data = new SampleInnerSource { Text = "Text" },
+                Items = null
             };
 
-            var sampleDestination4 = new SampleDestination
+            var destination = new SampleDestination
             {
-                FullName = sampleSource4.Name,
-                Remaining = 100 - sampleSource4.Progress,
-                Info = new SampleInnerDestination { Message = "Message" }
+                FullName = source.Name,
+                Remaining = 100 - source.Progress,
+                Info = new SampleInnerDestination { Message = "Message" },
+                Datas = null
             };
 
             Assert.That(
-                () => mappingAccordances.AssertAll(sampleSource4, sampleDestination4),
+                () => testee.AssertAll(source, destination),
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
@@ -155,25 +169,217 @@ namespace Omnifactotum.NUnit.Tests
         }
 
         [Test]
+        public void TestAssertAllWhenInnerListPropertyMismatchesByNullReferenceCheck()
+        {
+            const string ExpectedMessagePart =
+                "Both the source and destination values must be either null or non-null";
+
+            var testee = CreateTestee();
+
+            var source1 = new SampleSource
+            {
+                Name = "Job6A",
+                Progress = 6,
+                Data = null,
+                Items = new[] { new SampleSourceItem { Text = "Text6" } }
+            };
+
+            var destination1 = new SampleDestination
+            {
+                FullName = source1.Name,
+                Remaining = 100 - source1.Progress,
+                Info = null,
+                Datas = null
+            };
+
+            Assert.That(
+                () => testee.AssertAll(source1, destination1),
+                Throws.TypeOf<AssertionException>()
+                    .With
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring($".{nameof(SampleSource.Items)}")
+                    .And
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring($".{nameof(SampleDestination.Datas)}")
+                    .And
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring(ExpectedMessagePart));
+
+            var source2 = new SampleSource
+            {
+                Name = "Job6B",
+                Progress = 6,
+                Data = null,
+                Items = null
+            };
+
+            var destination2 = new SampleDestination
+            {
+                FullName = source2.Name,
+                Remaining = 100 - source2.Progress,
+                Info = null,
+                Datas = new[] { new SampleDestinationItem { TextData = "Text6" } }
+            };
+
+            Assert.That(
+                () => testee.AssertAll(source2, destination2),
+                Throws.TypeOf<AssertionException>()
+                    .With
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring($".{nameof(SampleSource.Items)}")
+                    .And
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring($".{nameof(SampleDestination.Datas)}")
+                    .And
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring(ExpectedMessagePart));
+        }
+
+        [Test]
+        public void TestAssertAllWhenInnerListPropertyMismatchesByCount()
+        {
+            var testee = CreateTestee();
+
+            var source = new SampleSource
+            {
+                Name = "Job6",
+                Progress = 6,
+                Data = null,
+                Items =
+                    new[]
+                    {
+                        new SampleSourceItem { Text = "ItemText5" },
+                        new SampleSourceItem { Text = "ItemText5-A" }
+                    }
+            };
+
+            var destination = new SampleDestination
+            {
+                FullName = source.Name,
+                Remaining = 100 - source.Progress,
+                Info = null,
+                Datas = new[] { new SampleDestinationItem { TextData = source.Items[0].Text } }
+            };
+
+            Assert.That(
+                () => testee.AssertAll(source, destination),
+                Throws.TypeOf<AssertionException>()
+                    .With
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring($".{nameof(SampleSource.Items)}")
+                    .And
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring($".{nameof(SampleDestination.Datas)}")
+                    .And
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring("The source and destination must have the same item count"));
+        }
+
+        [Test]
+        public void TestAssertAllWhenInnerListPropertyMismatchesByItem()
+        {
+            var testee = CreateTestee();
+
+            var source = new SampleSource
+            {
+                Name = "Job5",
+                Progress = 5,
+                Data = null,
+                Items = new[] { new SampleSourceItem { Text = "ItemText5" } }
+            };
+
+            var destination = new SampleDestination
+            {
+                FullName = source.Name,
+                Remaining = 100 - source.Progress,
+                Info = null,
+                Datas = new[] { new SampleDestinationItem { TextData = "TextData5" } }
+            };
+
+            Assert.That(
+                () => testee.AssertAll(source, destination),
+                Throws.TypeOf<AssertionException>()
+                    .With
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring($".{nameof(SampleSource.Items)}")
+                    .And
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring($".{nameof(SampleDestination.Datas)}")
+                    .And
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring($".{nameof(SampleSourceItem.Text)}")
+                    .And
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring($".{nameof(SampleDestinationItem.TextData)}")
+                    .And
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring("The source and destination must have the matching item at index 0"));
+        }
+
+        [Test]
         public void TestAssertAllFailsWhenNoMapping()
         {
-            var mappingAccordances = MappingAccordances.From<SampleSource>.To<SampleDestination>();
+            const string NoMappingsMessage = @"There must be at least one registered mapping to assert.";
+
+            var testee = MappingAccordances.From<SampleSource>.To<SampleDestination>();
 
             Assert.That(
-                () => mappingAccordances.AssertAll(null, null),
+                () => testee.AssertAll(null, null),
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring(MappingAccordances.NoMappingsMessage));
+                    .ContainsSubstring(NoMappingsMessage));
 
-            mappingAccordances.RegisterNullReferenceCheck();
+            testee.RegisterNullReferenceCheck();
 
             Assert.That(
-                () => mappingAccordances.AssertAll(null, null),
+                () => testee.AssertAll(null, null),
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring(MappingAccordances.NoMappingsMessage));
+                    .ContainsSubstring(NoMappingsMessage));
+        }
+
+        #endregion
+
+        #region Private Methods
+
+        private static MappingAccordances<SampleSource, SampleDestination> CreateTestee()
+        {
+            var innerMappingAccordances = MappingAccordances
+                .From<SampleInnerSource>
+                .To<SampleInnerDestination>()
+                .RegisterNullReferenceCheck()
+                .Register(source => source.Text, destination => destination.Message);
+
+            Assert.That(innerMappingAccordances.IsNullReferenceCheckRegistered, Is.True);
+            Assert.That(innerMappingAccordances.Count, Is.EqualTo(1));
+
+            var innerItemMappingAccordances = MappingAccordances
+                .From<SampleSourceItem>
+                .To<SampleDestinationItem>()
+                .RegisterNullReferenceCheck()
+                .Register(source => source.Text, destination => destination.TextData);
+
+            Assert.That(innerMappingAccordances.IsNullReferenceCheckRegistered, Is.True);
+            Assert.That(innerMappingAccordances.Count, Is.EqualTo(1));
+
+            var mappingAccordances = MappingAccordances
+                .From<SampleSource>
+                .To<SampleDestination>()
+                .Register(source => source.Name, destination => destination.FullName)
+                .Register(source => source.Data, destination => destination.Info, innerMappingAccordances)
+                .Register(source => source.Items, destination => destination.Datas, innerItemMappingAccordances)
+                .Register(
+                    source => source.Progress,
+                    destination => destination.Remaining,
+                    expectedValue => Is.EqualTo(100 - expectedValue),
+                    (sourceValue, destinationValue) => @"The percentage values must complement each other");
+
+            Assert.That(mappingAccordances.IsNullReferenceCheckRegistered, Is.False);
+            Assert.That(mappingAccordances.Count, Is.EqualTo(4));
+
+            return mappingAccordances;
         }
 
         #endregion
@@ -199,6 +405,12 @@ namespace Omnifactotum.NUnit.Tests
                 get;
                 set;
             }
+
+            public SampleSourceItem[] Items
+            {
+                get;
+                set;
+            }
         }
 
         #endregion
@@ -206,6 +418,19 @@ namespace Omnifactotum.NUnit.Tests
         #region SampleInnerSource Class
 
         private sealed class SampleInnerSource
+        {
+            public string Text
+            {
+                get;
+                set;
+            }
+        }
+
+        #endregion
+
+        #region SampleSourceItem Class
+
+        private sealed class SampleSourceItem
         {
             public string Text
             {
@@ -237,6 +462,12 @@ namespace Omnifactotum.NUnit.Tests
                 get;
                 set;
             }
+
+            public SampleDestinationItem[] Datas
+            {
+                get;
+                set;
+            }
         }
 
         #endregion
@@ -246,6 +477,19 @@ namespace Omnifactotum.NUnit.Tests
         private sealed class SampleInnerDestination
         {
             public string Message
+            {
+                get;
+                set;
+            }
+        }
+
+        #endregion
+
+        #region SampleDestinationItem Class
+
+        private sealed class SampleDestinationItem
+        {
+            public string TextData
             {
                 get;
                 set;
