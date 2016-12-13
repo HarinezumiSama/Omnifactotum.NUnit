@@ -8,7 +8,19 @@ namespace Omnifactotum.NUnit
     /// </summary>
     public static class MappingAccordances
     {
-        internal static readonly string NoMappingsMessage = "There must be at least one registered mapping to assert.";
+        internal const string NoMappingsMessage =
+            @"There must be at least one registered mapping to assert.";
+
+        internal const string NullMismatchMessage =
+            @"Both the source and destination must be either null or non-null.";
+
+        internal const string ListValueNullMismatchMessage =
+            @"Both the source and destination values must be either null or non-null";
+
+        internal const string ListValueCountMismatchMessage =
+            @"The source and destination must have the same item count";
+
+        internal static readonly string InnerMappingSeparator = new string('-', 80);
 
         /// <summary>
         ///     Provides the fluid syntax of creating instances of the
@@ -35,17 +47,10 @@ namespace Omnifactotum.NUnit
         }
 
         /// <summary>
-        ///     Represents a reference to a method that creates an assertion failure message based on
-        ///     the specified source and destination expressions and values.
+        ///     Represents a reference to a method that returns an assertion failure message.
         /// </summary>
-        /// <param name="sourceExpression">
-        ///     A string representation of the expression selecting the property in a source object.
-        /// </param>
         /// <param name="sourceValue">
         ///     The value of the property in a source object.
-        /// </param>
-        /// <param name="destinationExpression">
-        ///     A string representation of the expression selecting the property in a destination object.
         /// </param>
         /// <param name="destinationValue">
         ///     The value of the property in a destination object.
@@ -54,9 +59,7 @@ namespace Omnifactotum.NUnit
         ///     The type of the source and destination properties.
         /// </typeparam>
         public delegate string AssertionFailedMessageCreator<in TValue>(
-            [NotNull] string sourceExpression,
             [CanBeNull] TValue sourceValue,
-            [NotNull] string destinationExpression,
             [CanBeNull] TValue destinationValue);
     }
 }
