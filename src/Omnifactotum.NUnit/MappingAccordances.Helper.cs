@@ -23,6 +23,22 @@ namespace Omnifactotum.NUnit
         internal static readonly string InnerMappingSeparator = new string('-', 80);
 
         /// <summary>
+        ///     Represents a reference to a method that returns an assertion failure message.
+        /// </summary>
+        /// <param name="sourceValue">
+        ///     The value of the property in a source object.
+        /// </param>
+        /// <param name="destinationValue">
+        ///     The value of the property in a destination object.
+        /// </param>
+        /// <typeparam name="TValue">
+        ///     The type of the source and destination properties.
+        /// </typeparam>
+        public delegate string AssertionFailedMessageCreator<in TValue>(
+            [CanBeNull] TValue sourceValue,
+            [CanBeNull] TValue destinationValue);
+
+        /// <summary>
         ///     Provides the fluid syntax of creating instances of the
         ///     <see cref="MappingAccordances{TSource,TDestination}"/> class.
         /// </summary>
@@ -45,21 +61,5 @@ namespace Omnifactotum.NUnit
             public static MappingAccordances<TSource, TDestination> To<TDestination>()
                 => new MappingAccordances<TSource, TDestination>();
         }
-
-        /// <summary>
-        ///     Represents a reference to a method that returns an assertion failure message.
-        /// </summary>
-        /// <param name="sourceValue">
-        ///     The value of the property in a source object.
-        /// </param>
-        /// <param name="destinationValue">
-        ///     The value of the property in a destination object.
-        /// </param>
-        /// <typeparam name="TValue">
-        ///     The type of the source and destination properties.
-        /// </typeparam>
-        public delegate string AssertionFailedMessageCreator<in TValue>(
-            [CanBeNull] TValue sourceValue,
-            [CanBeNull] TValue destinationValue);
     }
 }
