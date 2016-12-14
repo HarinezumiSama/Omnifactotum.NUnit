@@ -115,18 +115,22 @@ namespace Omnifactotum.NUnit
         ///     A reference to a method that creates an assertion failure message based on the
         ///     specified source and destination expressions and values.
         /// </param>
-        /// <typeparam name="TValue">
-        ///     The type of a value produced by any of the two property selectors.
+        /// <typeparam name="TSourceValue">
+        ///     The type of a value produced by the source property selector.
+        /// </typeparam>
+        /// <typeparam name="TDestinationValue">
+        ///     The type of a value produced by the destination property selector.
         /// </typeparam>
         /// <returns>
         ///     This <see cref="MappingAccordances{TSource,TDestination}"/> instance.
         /// </returns>
         [NotNull]
-        public MappingAccordances<TSource, TDestination> Register<TValue>(
-            [NotNull] Expression<Func<TSource, TValue>> sourcePropertySelectorExpression,
-            [NotNull] Expression<Func<TDestination, TValue>> destinationPropertySelectorExpression,
-            [NotNull] ConstraintCreator<TValue> createConstraintFromSourcePropertyValue,
-            [NotNull] MappingAccordances.AssertionFailedMessageCreator<TValue> getAssertionFailureMessage)
+        public MappingAccordances<TSource, TDestination> Register<TSourceValue, TDestinationValue>(
+            [NotNull] Expression<Func<TSource, TSourceValue>> sourcePropertySelectorExpression,
+            [NotNull] Expression<Func<TDestination, TDestinationValue>> destinationPropertySelectorExpression,
+            [NotNull] ConstraintCreator<TSourceValue> createConstraintFromSourcePropertyValue,
+            [NotNull] MappingAccordances.AssertionFailedMessageCreator<TSourceValue, TDestinationValue>
+                getAssertionFailureMessage)
         {
             Assert.That(sourcePropertySelectorExpression, Is.Not.Null);
             Assert.That(destinationPropertySelectorExpression, Is.Not.Null);
@@ -172,6 +176,44 @@ namespace Omnifactotum.NUnit
 
             return this;
         }
+
+        /// <summary>
+        ///     Registers a mapping using the specified source and destination property selectors and
+        ///     the specified constraint and error message.
+        /// </summary>
+        /// <param name="sourcePropertySelectorExpression">
+        ///     The expression selecting the property in a source object.
+        /// </param>
+        /// <param name="destinationPropertySelectorExpression">
+        ///     The expression selecting the property in a destination object.
+        /// </param>
+        /// <param name="createConstraintFromSourcePropertyValue">
+        ///     A reference to a method that creates an instance of <see cref="IResolveConstraint"/>
+        ///     using the value of the property in a source object.
+        /// </param>
+        /// <param name="assertionFailureMessage">
+        ///     An assertion failure message.
+        /// </param>
+        /// <typeparam name="TSourceValue">
+        ///     The type of a value produced by the source property selector.
+        /// </typeparam>
+        /// <typeparam name="TDestinationValue">
+        ///     The type of a value produced by the destination property selector.
+        /// </typeparam>
+        /// <returns>
+        ///     This <see cref="MappingAccordances{TSource,TDestination}"/> instance.
+        /// </returns>
+        [NotNull]
+        public MappingAccordances<TSource, TDestination> Register<TSourceValue, TDestinationValue>(
+            [NotNull] Expression<Func<TSource, TSourceValue>> sourcePropertySelectorExpression,
+            [NotNull] Expression<Func<TDestination, TDestinationValue>> destinationPropertySelectorExpression,
+            [NotNull] ConstraintCreator<TSourceValue> createConstraintFromSourcePropertyValue,
+            [NotNull] string assertionFailureMessage)
+            => Register(
+                sourcePropertySelectorExpression,
+                destinationPropertySelectorExpression,
+                createConstraintFromSourcePropertyValue,
+                (sourceValue, destinationValue) => assertionFailureMessage);
 
         /// <summary>
         ///     Registers a mapping using the specified source and destination property selectors and
@@ -350,7 +392,7 @@ namespace Omnifactotum.NUnit
                 sourcePropertySelectorExpression,
                 destinationPropertySelectorExpression,
                 expectedValue => Is.EqualTo(expectedValue),
-                (sourceValue, destinationValue) => @"The values are expected to be equal");
+                @"The values are expected to be equal");
 
         /// <summary>
         ///     Executes assertion of all the registered mappings for the specified source and

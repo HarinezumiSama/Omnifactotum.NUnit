@@ -31,12 +31,15 @@ namespace Omnifactotum.NUnit
         /// <param name="destinationValue">
         ///     The value of the property in a destination object.
         /// </param>
-        /// <typeparam name="TValue">
-        ///     The type of the source and destination properties.
+        /// <typeparam name="TSourceValue">
+        ///     The type of the value of a source property.
         /// </typeparam>
-        public delegate string AssertionFailedMessageCreator<in TValue>(
-            [CanBeNull] TValue sourceValue,
-            [CanBeNull] TValue destinationValue);
+        /// <typeparam name="TDestinationValue">
+        ///     The type of the value of a destination property.
+        /// </typeparam>
+        public delegate string AssertionFailedMessageCreator<in TSourceValue, in TDestinationValue>(
+            [CanBeNull] TSourceValue sourceValue,
+            [CanBeNull] TDestinationValue destinationValue);
 
         /// <summary>
         ///     Provides the fluid syntax of creating instances of the

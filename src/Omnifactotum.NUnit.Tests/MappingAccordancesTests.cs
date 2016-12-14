@@ -7,6 +7,12 @@ namespace Omnifactotum.NUnit.Tests
     [TestFixture]
     public sealed class MappingAccordancesTests
     {
+        #region Constants and Fields
+
+        private const string PercentageValuesMismatchMessage = @"The percentage values must complement each other";
+
+        #endregion
+
         #region Tests
 
         [Test]
@@ -73,7 +79,7 @@ namespace Omnifactotum.NUnit.Tests
         }
 
         [Test]
-        public void TestAssertAllWhenPropertyMismatchesUsingCustomRule()
+        public void TestAssertAllWhenPropertyMismatchesCustomConstraint()
         {
             var testee = CreateTestee();
 
@@ -98,7 +104,39 @@ namespace Omnifactotum.NUnit.Tests
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring("The percentage values must complement each other"));
+                    .ContainsSubstring(PercentageValuesMismatchMessage));
+        }
+
+        [Test]
+        public void TestAssertAllWhenRegisteredWithConstantMessageAndPropertyMismatchesCustomConstraint()
+        {
+            const string RemainingPropertyMismatchMessage = @"The remaining value must be the negative progress.";
+
+            var testee = MappingAccordances
+                .From<SampleSource>
+                .To<SampleDestination>()
+                .Register(
+                    source => source.Progress,
+                    destination => destination.Remaining,
+                    expectedValue => Is.EqualTo(-expectedValue),
+                    RemainingPropertyMismatchMessage);
+
+            var sampleSource = new SampleSource
+            {
+                Progress = 17
+            };
+
+            var sampleDestination = new SampleDestination
+            {
+                Remaining = sampleSource.Progress
+            };
+
+            Assert.That(
+                () => testee.AssertAll(sampleSource, sampleDestination),
+                Throws.TypeOf<AssertionException>()
+                    .With
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring(RemainingPropertyMismatchMessage));
         }
 
         [Test]
@@ -364,7 +402,7 @@ namespace Omnifactotum.NUnit.Tests
             Assert.That(innerMappingAccordances.IsNullReferenceCheckRegistered, Is.True);
             Assert.That(innerMappingAccordances.Count, Is.EqualTo(1));
 
-            var mappingAccordances = MappingAccordances
+            var testee = MappingAccordances
                 .From<SampleSource>
                 .To<SampleDestination>()
                 .Register(source => source.Name, destination => destination.FullName)
@@ -374,12 +412,12 @@ namespace Omnifactotum.NUnit.Tests
                     source => source.Progress,
                     destination => destination.Remaining,
                     expectedValue => Is.EqualTo(100 - expectedValue),
-                    (sourceValue, destinationValue) => @"The percentage values must complement each other");
+                    (sourceValue, destinationValue) => PercentageValuesMismatchMessage);
 
-            Assert.That(mappingAccordances.IsNullReferenceCheckRegistered, Is.False);
-            Assert.That(mappingAccordances.Count, Is.EqualTo(4));
+            Assert.That(testee.IsNullReferenceCheckRegistered, Is.False);
+            Assert.That(testee.Count, Is.EqualTo(4));
 
-            return mappingAccordances;
+            return testee;
         }
 
         #endregion
