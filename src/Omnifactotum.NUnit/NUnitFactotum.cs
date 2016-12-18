@@ -255,6 +255,28 @@ namespace Omnifactotum.NUnit
             return value.EnsureNotNull();
         }
 
+        /// <summary>
+        ///     Returns a new instance of <see cref="AssertCastHelper{TSource}"/> to invoke its
+        ///     <see cref="AssertCastHelper{TSource}.To{TDestination}"/> method.
+        /// </summary>
+        /// <param name="source">
+        ///     The source value.
+        /// </param>
+        /// <typeparam name="TSource">
+        ///     The type of the source value.
+        /// </typeparam>
+        /// <returns>
+        ///     A new instance of <see cref="AssertCastHelper{TSource}"/>.
+        /// </returns>
+        /// <example>
+        ///     <code>
+        ///         ICustomer customer = testObject.GetCustomer();
+        ///         var castCustomer = customer.AssertCast().To&lt;Customer&gt;();
+        ///     </code>
+        /// </example>
+        public static AssertCastHelper<TSource> AssertCast<TSource>(this TSource source)
+            => new AssertCastHelper<TSource>(source);
+
         #endregion
 
         #region Private Methods
@@ -323,6 +345,43 @@ namespace Omnifactotum.NUnit
                     visibleAccessorAttribute);
 
             #endregion
+        }
+
+        #endregion
+
+        #region AssertCastHelper<TSource> Structure
+
+        /// <summary>
+        ///     Helper class for the <see cref="NUnitFactotum.AssertCast{TSource}"/> method.
+        /// </summary>
+        /// <typeparam name="TSource">
+        ///     The type of the source value.
+        /// </typeparam>
+        public struct AssertCastHelper<TSource>
+        {
+            private readonly TSource _source;
+
+            internal AssertCastHelper(TSource source)
+            {
+                _source = source;
+            }
+
+            /// <summary>
+            ///     Asserts the type of the source value to be compatible with the destination type
+            ///     and returns the cast value.
+            /// </summary>
+            /// <typeparam name="TDestination">
+            ///     The destination type to cast to.
+            /// </typeparam>
+            /// <returns>
+            ///     The source value cast to the destination type.
+            /// </returns>
+            public TDestination To<TDestination>()
+                where TDestination : TSource
+            {
+                Assert.That(_source, /*Is.Not.Null &*/ Is.InstanceOf<TDestination>());
+                return (TDestination)_source;
+            }
         }
 
         #endregion
