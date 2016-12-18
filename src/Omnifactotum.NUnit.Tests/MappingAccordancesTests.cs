@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Linq;
 using NUnit.Framework;
+using Omnifactotum.Annotations;
 
 namespace Omnifactotum.NUnit.Tests
 {
@@ -378,6 +378,101 @@ namespace Omnifactotum.NUnit.Tests
                     .ContainsSubstring(NoMappingsMessage));
         }
 
+        [Test]
+        public void TestAssertAllWithRegisterAllMatchingProperties()
+        {
+            var testeeImplicitCaseSensitive =
+                MappingAccordances.From<SampleSource>.To<SampleDestination>().RegisterAllMatchingProperties();
+
+            var testeeExplicitCaseSensitive =
+                MappingAccordances.From<SampleSource>.To<SampleDestination>().RegisterAllMatchingProperties(false);
+
+            var testeeCaseInsensitive =
+                MappingAccordances.From<SampleSource>.To<SampleDestination>().RegisterAllMatchingProperties(true);
+
+            Assert.That(testeeImplicitCaseSensitive.Count, Is.EqualTo(1));
+            Assert.That(testeeExplicitCaseSensitive.Count, Is.EqualTo(1));
+            Assert.That(testeeCaseInsensitive.Count, Is.EqualTo(2));
+
+            var sampleSource = new SampleSource
+            {
+                Name = "John",
+                MatchingName = "matching",
+                MatchingTextCaseInsensitive = "Text"
+            };
+
+            var sampleDestination1 = new SampleDestination
+            {
+                FullName = "FullName",
+                MatchingName = sampleSource.MatchingName,
+                matchingtextcaseinsensitive = sampleSource.MatchingTextCaseInsensitive
+            };
+
+            Assert.That(() => testeeImplicitCaseSensitive.AssertAll(sampleSource, sampleDestination1), Throws.Nothing);
+            Assert.That(() => testeeExplicitCaseSensitive.AssertAll(sampleSource, sampleDestination1), Throws.Nothing);
+            Assert.That(() => testeeCaseInsensitive.AssertAll(sampleSource, sampleDestination1), Throws.Nothing);
+
+            var sampleDestination2 = new SampleDestination
+            {
+                FullName = sampleSource.Name,
+                MatchingName = "no match",
+                matchingtextcaseinsensitive = sampleSource.MatchingTextCaseInsensitive
+            };
+
+            const string SourcePrefix = "source.";
+            const string DestinationPrefix = "destination.";
+
+            Assert.That(
+                () => testeeImplicitCaseSensitive.AssertAll(sampleSource, sampleDestination2),
+                Throws.TypeOf<AssertionException>()
+                    .With
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring(SourcePrefix + nameof(SampleSource.MatchingName))
+                    .And
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring(DestinationPrefix + nameof(SampleDestination.MatchingName)));
+
+            Assert.That(
+                () => testeeExplicitCaseSensitive.AssertAll(sampleSource, sampleDestination2),
+                Throws.TypeOf<AssertionException>()
+                    .With
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring(SourcePrefix + nameof(SampleSource.MatchingName))
+                    .And
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring(DestinationPrefix + nameof(SampleDestination.MatchingName)));
+
+            Assert.That(
+                () => testeeCaseInsensitive.AssertAll(sampleSource, sampleDestination2),
+                Throws.TypeOf<AssertionException>()
+                    .With
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring(SourcePrefix + nameof(SampleSource.MatchingName))
+                    .And
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring(DestinationPrefix + nameof(SampleDestination.MatchingName)));
+
+            var sampleDestination3 = new SampleDestination
+            {
+                FullName = sampleSource.Name,
+                MatchingName = sampleSource.MatchingName,
+                matchingtextcaseinsensitive = "nothing"
+            };
+
+            Assert.That(() => testeeImplicitCaseSensitive.AssertAll(sampleSource, sampleDestination3), Throws.Nothing);
+            Assert.That(() => testeeExplicitCaseSensitive.AssertAll(sampleSource, sampleDestination3), Throws.Nothing);
+
+            Assert.That(
+                () => testeeCaseInsensitive.AssertAll(sampleSource, sampleDestination3),
+                Throws.TypeOf<AssertionException>()
+                    .With
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring(SourcePrefix + nameof(SampleSource.MatchingTextCaseInsensitive))
+                    .And
+                    .Property(nameof(AssertionException.Message))
+                    .ContainsSubstring(DestinationPrefix + nameof(SampleDestination.matchingtextcaseinsensitive)));
+        }
+
         #endregion
 
         #region Private Methods
@@ -426,25 +521,43 @@ namespace Omnifactotum.NUnit.Tests
 
         private sealed class SampleSource
         {
+            [UsedImplicitly]
             public string Name
             {
                 get;
                 set;
             }
 
+            [UsedImplicitly]
             public int Progress
             {
                 get;
                 set;
             }
 
+            [UsedImplicitly]
             public SampleInnerSource Data
             {
                 get;
                 set;
             }
 
+            [UsedImplicitly]
             public SampleSourceItem[] Items
+            {
+                get;
+                set;
+            }
+
+            [UsedImplicitly]
+            public string MatchingName
+            {
+                get;
+                set;
+            }
+
+            [UsedImplicitly]
+            public string MatchingTextCaseInsensitive
             {
                 get;
                 set;
@@ -483,25 +596,44 @@ namespace Omnifactotum.NUnit.Tests
 
         private sealed class SampleDestination
         {
+            [UsedImplicitly]
             public string FullName
             {
                 get;
                 set;
             }
 
+            [UsedImplicitly]
             public int Remaining
             {
                 get;
                 set;
             }
 
+            [UsedImplicitly]
             public SampleInnerDestination Info
             {
                 get;
                 set;
             }
 
+            [UsedImplicitly]
             public SampleDestinationItem[] Datas
+            {
+                get;
+                set;
+            }
+
+            [UsedImplicitly]
+            public string MatchingName
+            {
+                get;
+                set;
+            }
+
+            [UsedImplicitly]
+            //// ReSharper disable once InconsistentNaming -- For the case-insensitive test case
+            public string matchingtextcaseinsensitive
             {
                 get;
                 set;

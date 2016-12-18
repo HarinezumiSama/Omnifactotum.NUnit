@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
+using System.Reflection;
 using NUnit.Framework;
 using NUnit.Framework.Constraints;
 using Omnifactotum.Annotations;
@@ -26,10 +25,17 @@ namespace Omnifactotum.NUnit
     public sealed class MappingAccordances<TSource, TDestination>
     {
         [NotNull]
+        private readonly Lazy<MethodInfo> _registerMatchingPropertyMethodInfo;
+
+        [NotNull]
         private readonly List<Action<TSource, TDestination, string>> _assertions;
 
         [CanBeNull]
         private volatile Func<TSource, TDestination, bool> _nullReferenceAssertion;
+
+        private delegate MappingAccordances<TSource, TDestination> RegisterMatchingProperty(
+            Expression<Func<TSource, object>> sourcePropertySelectorExpression,
+            Expression<Func<TDestination, object>> destinationPropertySelectorExpression);
 
         /// <summary>
         ///     Initializes a new instance of the
@@ -37,6 +43,9 @@ namespace Omnifactotum.NUnit
         /// </summary>
         public MappingAccordances()
         {
+            _registerMatchingPropertyMethodInfo = Lazy.Create(
+                () => new RegisterMatchingProperty(Register).Method.GetGenericMethodDefinition());
+
             _assertions = new List<Action<TSource, TDestination, string>>();
         }
 
@@ -82,8 +91,8 @@ namespace Omnifactotum.NUnit
                 _nullReferenceAssertion =
                     (source, destination) =>
                     {
-                        var isSourceNull = IsNullReference(source);
-                        var isDestinationNull = IsNullReference(destination);
+                        var isSourceNull = MappingAccordances.IsNullReference(source);
+                        var isDestinationNull = MappingAccordances.IsNullReference(destination);
 
                         Assert.That(
                             isDestinationNull,
@@ -140,8 +149,8 @@ namespace Omnifactotum.NUnit
             var sourcePropertySelector = sourcePropertySelectorExpression.Compile();
             var destinationPropertySelector = destinationPropertySelectorExpression.Compile();
 
-            var sourceExpression = ToReadableString(sourcePropertySelectorExpression);
-            var destinationExpression = ToReadableString(destinationPropertySelectorExpression);
+            var sourceExpression = MappingAccordances.ToReadableString(sourcePropertySelectorExpression);
+            var destinationExpression = MappingAccordances.ToReadableString(destinationPropertySelectorExpression);
 
             _assertions.Add(
                 (source, destination, parentFailureMessage) =>
@@ -165,7 +174,7 @@ namespace Omnifactotum.NUnit
                         $@"A factory method specified in the argument '{
                             nameof(getAssertionFailureMessage)}' returned an invalid value.");
 
-                    var failureMessage = CreateDetailedFailureMessage(
+                    var failureMessage = MappingAccordances.CreateDetailedFailureMessage(
                         baseFailureMessage,
                         sourceExpression,
                         destinationExpression,
@@ -251,8 +260,8 @@ namespace Omnifactotum.NUnit
             var sourcePropertySelector = sourcePropertySelectorExpression.Compile();
             var destinationPropertySelector = destinationPropertySelectorExpression.Compile();
 
-            var sourceExpression = ToReadableString(sourcePropertySelectorExpression);
-            var destinationExpression = ToReadableString(destinationPropertySelectorExpression);
+            var sourceExpression = MappingAccordances.ToReadableString(sourcePropertySelectorExpression);
+            var destinationExpression = MappingAccordances.ToReadableString(destinationPropertySelectorExpression);
 
             _assertions.Add(
                 (source, destination, parentFailureMessage) =>
@@ -260,7 +269,7 @@ namespace Omnifactotum.NUnit
                     var sourcePropertyValue = sourcePropertySelector(source);
                     var destinationPropertyValue = destinationPropertySelector(destination);
 
-                    var failureMessage = CreateDetailedFailureMessage(
+                    var failureMessage = MappingAccordances.CreateDetailedFailureMessage(
                         @"The values are expected to match",
                         sourceExpression,
                         destinationExpression,
@@ -312,8 +321,8 @@ namespace Omnifactotum.NUnit
             var sourcePropertySelector = sourcePropertySelectorExpression.Compile();
             var destinationPropertySelector = destinationPropertySelectorExpression.Compile();
 
-            var sourceExpression = ToReadableString(sourcePropertySelectorExpression);
-            var destinationExpression = ToReadableString(destinationPropertySelectorExpression);
+            var sourceExpression = MappingAccordances.ToReadableString(sourcePropertySelectorExpression);
+            var destinationExpression = MappingAccordances.ToReadableString(destinationPropertySelectorExpression);
 
             _assertions.Add(
                 (source, destination, parentFailureMessage) =>
@@ -321,10 +330,10 @@ namespace Omnifactotum.NUnit
                     var sourcePropertyValue = sourcePropertySelector(source);
                     var destinationPropertyValue = destinationPropertySelector(destination);
 
-                    var isSourcePropertyValueNull = IsNullReference(sourcePropertyValue);
-                    var isDestinationPropertyValueNull = IsNullReference(destinationPropertyValue);
+                    var isSourcePropertyValueNull = MappingAccordances.IsNullReference(sourcePropertyValue);
+                    var isDestinationPropertyValueNull = MappingAccordances.IsNullReference(destinationPropertyValue);
 
-                    var nullMismatchMessage = CreateDetailedFailureMessage(
+                    var nullMismatchMessage = MappingAccordances.CreateDetailedFailureMessage(
                         MappingAccordances.ListValueNullMismatchMessage,
                         sourceExpression,
                         destinationExpression,
@@ -342,7 +351,7 @@ namespace Omnifactotum.NUnit
 
                     var itemCount = destinationPropertyValue.Count;
 
-                    var countMismatchMessage = CreateDetailedFailureMessage(
+                    var countMismatchMessage = MappingAccordances.CreateDetailedFailureMessage(
                         MappingAccordances.ListValueCountMismatchMessage,
                         sourceExpression,
                         destinationExpression,
@@ -355,7 +364,7 @@ namespace Omnifactotum.NUnit
                         var sourceItem = sourcePropertyValue[index];
                         var destinationItem = destinationPropertyValue[index];
 
-                        var itemMismatchMessage = CreateDetailedFailureMessage(
+                        var itemMismatchMessage = MappingAccordances.CreateDetailedFailureMessage(
                             $@"The source and destination must have the matching item at index {index}",
                             sourceExpression,
                             destinationExpression,
@@ -395,6 +404,73 @@ namespace Omnifactotum.NUnit
                 @"The values are expected to be equal");
 
         /// <summary>
+        ///     Registers all the properties, in source and destination types, that match by name and
+        ///     property type.
+        /// </summary>
+        /// <param name="ignoreCase">
+        ///     <c>true</c> if the property name comparison is case insensitive; <c>false</c> if the
+        ///     property name comparison is case sensitive.
+        /// </param>
+        /// <returns>
+        ///     This <see cref="MappingAccordances{TSource,TDestination}"/> instance.
+        /// </returns>
+        public MappingAccordances<TSource, TDestination> RegisterAllMatchingProperties(bool ignoreCase)
+        {
+            var sourceType = typeof(TSource);
+            var destinationType = typeof(TDestination);
+
+            var sourceProperties = MappingAccordances.GetSimpleReadableProperties(sourceType, ignoreCase);
+            var destinationProperties = MappingAccordances.GetSimpleReadableProperties(destinationType, ignoreCase);
+
+            var propertyNameComparer = MappingAccordances.GetPropertyNameComparer(ignoreCase);
+
+            var matchingNames = sourceProperties
+                .Keys
+                .Intersect(destinationProperties.Keys, propertyNameComparer)
+                .ToArray();
+
+            foreach (var name in matchingNames)
+            {
+                var sourceProperty = sourceProperties[name];
+                var destinationProperty = destinationProperties[name];
+                var propertyType = sourceProperty.PropertyType;
+
+                if (propertyType != destinationProperty.PropertyType)
+                {
+                    continue;
+                }
+
+                var sourcePropertySelectorExpression = MappingAccordances.CreatePropertyExpression(
+                    sourceType,
+                    sourceProperty,
+                    "source");
+
+                var destinationPropertySelectorExpression = MappingAccordances.CreatePropertyExpression(
+                    destinationType,
+                    destinationProperty,
+                    "destination");
+
+                var register = _registerMatchingPropertyMethodInfo.Value.MakeGenericMethod(propertyType);
+
+                register.Invoke(
+                    this,
+                    new object[] { sourcePropertySelectorExpression, destinationPropertySelectorExpression });
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        ///     Registers all the properties, in source and destination types, that match by name and
+        ///     property type. The property name comparison is case sensitive.
+        /// </summary>
+        /// <returns>
+        ///     This <see cref="MappingAccordances{TSource,TDestination}"/> instance.
+        /// </returns>
+        public MappingAccordances<TSource, TDestination> RegisterAllMatchingProperties()
+            => RegisterAllMatchingProperties(false);
+
+        /// <summary>
         ///     Executes assertion of all the registered mappings for the specified source and
         ///     destination objects.
         /// </summary>
@@ -424,61 +500,6 @@ namespace Omnifactotum.NUnit
             {
                 assertion(source, destination, parentFailureMessage);
             }
-        }
-
-        private static string ToReadableString<T, TResult>([NotNull] Expression<Func<T, TResult>> expression)
-        {
-            Assert.That(expression, Is.Not.Null);
-
-            var expressionBodyString = expression.Body.ToString();
-
-            var result = string.Format(
-                CultureInfo.InvariantCulture,
-                "({0} {1}) => {2} : {3}",
-                typeof(T).GetFullName(),
-                expression.Parameters.Single().Name,
-                expressionBodyString,
-                expression.ReturnType.GetQualifiedName());
-
-            return result;
-        }
-
-        private static bool IsNullReference<T>(T value) => !typeof(T).IsValueType && ReferenceEquals(value, null);
-
-        private static string CreateDetailedFailureMessage(
-            string baseFailureMessage,
-            string sourceExpression,
-            string destinationExpression,
-            string parentFailureMessage)
-        {
-            const char Colon = ':';
-
-            Assert.That(
-                baseFailureMessage,
-                Is.Not.Null.And.Not.Empty,
-                @"The base failure message cannot be empty nor null.");
-
-            var messageBuilder = new StringBuilder(baseFailureMessage.TrimSafely());
-
-            if (messageBuilder.Length > 0 && messageBuilder[messageBuilder.Length - 1] != Colon)
-            {
-                messageBuilder.Append(Colon);
-            }
-
-            if (!string.IsNullOrEmpty(parentFailureMessage))
-            {
-                var parentMessageFormatted = $@"{parentFailureMessage}{Environment.NewLine}{
-                    MappingAccordances.InnerMappingSeparator}{Environment.NewLine}[Inner Mapping]{
-                    Environment.NewLine}";
-
-                messageBuilder.Insert(0, parentMessageFormatted);
-            }
-
-            messageBuilder.Append(
-                $@"{Environment.NewLine}* Source: {sourceExpression}{Environment.NewLine}* Destination: {
-                    destinationExpression}{Environment.NewLine}");
-
-            return messageBuilder.ToString();
         }
     }
 }
