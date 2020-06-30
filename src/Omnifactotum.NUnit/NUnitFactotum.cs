@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -13,9 +12,13 @@ namespace Omnifactotum.NUnit
     /// <summary>
     ///     Provides helper methods and properties for common use in the NUnit tests.
     /// </summary>
-    public static class NUnitFactotum
+    internal static class NUnitFactotum
     {
-        #region Public Methods
+        private const string EqualityOperatorMethodName = "op_Equality";
+        private const string InequalityOperatorMethodName = "op_Inequality";
+
+        private const BindingFlags OperatorBindingFlags =
+            BindingFlags.Static | BindingFlags.Public | BindingFlags.FlattenHierarchy;
 
         /// <summary>
         ///     Asserts the readability and writability of the specified property.
@@ -95,34 +98,68 @@ namespace Omnifactotum.NUnit
         /// </param>
         public static void AssertEquality<T>(T value1, T value2, AssertEqualityExpectation equalityExpectation)
         {
+            if (!ReferenceEquals(value1, null))
+            {
+                Assert.That(value1, Is.TypeOf<T>());
+            }
+
+            if (!ReferenceEquals(value2, null))
+            {
+                Assert.That(value2, Is.TypeOf<T>());
+            }
+
             if (!ReferenceEquals(value1, null) && !ReferenceEquals(value2, null)
                 && equalityExpectation != AssertEqualityExpectation.EqualAndMayBeSame)
             {
-                Assert.That(ReferenceEquals(value1, value2), Is.False);
+                Assert.That(value1, Is.Not.SameAs(value2));
             }
 
             var equals = equalityExpectation == AssertEqualityExpectation.EqualAndMayBeSame
                 || equalityExpectation == AssertEqualityExpectation.EqualAndCannotBeSame;
 
             Assert.That(EqualityComparer<T>.Default.Equals(value1, value2), Is.EqualTo(equals));
-            Assert.That(Equals(value1, value2), Is.EqualTo(equals));
+            Assert.That(EqualityComparer<T>.Default.Equals(value2, value1), Is.EqualTo(equals));
+
+            var value1AsObject = (object)value1;
+            var value2AsObject = (object)value2;
+
+            Assert.That(Equals(value1AsObject, value2AsObject), Is.EqualTo(equals));
+            Assert.That(Equals(value2AsObject, value1AsObject), Is.EqualTo(equals));
 
             if (!ReferenceEquals(value1, null))
             {
-                Assert.That(value1.Equals(value2), Is.EqualTo(equals));
-                Assert.That(((object)value1).Equals(value2), Is.EqualTo(equals));
+                Assert.That(value1AsObject.Equals(value2AsObject), Is.EqualTo(equals));
             }
 
             if (!ReferenceEquals(value2, null))
             {
-                Assert.That(value2.Equals(value1), Is.EqualTo(equals));
-                Assert.That(((object)value2).Equals(value1), Is.EqualTo(equals));
+                Assert.That(value2AsObject.Equals(value1AsObject), Is.EqualTo(equals));
             }
 
             if (equals && !ReferenceEquals(value1, null) && !ReferenceEquals(value2, null))
             {
                 Assert.That(value1.GetHashCode(), Is.EqualTo(value2.GetHashCode()));
             }
+
+            var equalityOperatorMethod = typeof(T).GetMethod(EqualityOperatorMethodName, OperatorBindingFlags);
+
+            Assert.That(
+                equalityOperatorMethod,
+                Is.Not.Null,
+                $@"Equality operator (==) must be defined for the type {typeof(T).GetFullName()}.");
+
+            Assert.That(equalityOperatorMethod.Invoke(null, new object[] { value1, value2 }), Is.EqualTo(equals));
+            Assert.That(equalityOperatorMethod.Invoke(null, new object[] { value2, value1 }), Is.EqualTo(equals));
+
+            var inequalityOperatorMethod = typeof(T).GetMethod(InequalityOperatorMethodName, OperatorBindingFlags);
+
+            Assert.That(
+                inequalityOperatorMethod,
+                Is.Not.Null,
+                $@"Inequality operator (!=) must be defined for the type {typeof(T).GetFullName()}.");
+
+            Assert.That(inequalityOperatorMethod.Invoke(null, new object[] { value1, value2 }), Is.EqualTo(!equals));
+            Assert.That(inequalityOperatorMethod.Invoke(null, new object[] { value2, value1 }), Is.EqualTo(!equals));
         }
 
         /// <summary>
@@ -277,10 +314,6 @@ namespace Omnifactotum.NUnit
         public static AssertCastHelper<TSource> AssertCast<TSource>(this TSource source)
             => new AssertCastHelper<TSource>(source);
 
-        #endregion
-
-        #region Private Methods
-
         /// <summary>
         ///     Determines if the access attribute of the specified method matches the specified attribute.
         /// </summary>
@@ -304,10 +337,6 @@ namespace Omnifactotum.NUnit
             return result;
         }
 
-        #endregion
-
-        #region For<TObject> Class
-
         /// <summary>
         ///     Provides a convenient access to helper methods for the specified type.
         /// </summary>
@@ -316,8 +345,6 @@ namespace Omnifactotum.NUnit
         /// </typeparam>
         public static class For<TObject>
         {
-            #region Public Methods
-
             /// <summary>
             ///     Asserts the readability and writability of the specified property.
             /// </summary>
@@ -343,13 +370,7 @@ namespace Omnifactotum.NUnit
                     propertyGetterExpression,
                     expectedAccessMode,
                     visibleAccessorAttribute);
-
-            #endregion
         }
-
-        #endregion
-
-        #region AssertCastHelper<TSource> Structure
 
         /// <summary>
         ///     Helper class for the <see cref="NUnitFactotum.AssertCast{TSource}"/> method.
@@ -383,7 +404,5 @@ namespace Omnifactotum.NUnit
                 return (TDestination)_source;
             }
         }
-
-        #endregion
     }
 }
