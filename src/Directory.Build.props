@@ -1,0 +1,88 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<Project>
+    <PropertyGroup>
+        <Version>0.2.0</Version>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <VersionSuffix>-debug</VersionSuffix>
+        <BuildDateYear>$([System.String]::Format("{0:yyyy}", $([System.DateTime]::Now)))</BuildDateYear>
+        <ReleaseNotesFilePath>$(SolutionDir)$(SolutionName).ReleaseNotes.md</ReleaseNotesFilePath>
+        <PackageReleaseNotes></PackageReleaseNotes>
+        <IsAppveyorBuild>false</IsAppveyorBuild>
+    </PropertyGroup>
+
+    <Target Name="CheckBuildPropertiesBeforeBuild" BeforeTargets="Clean;Build;Restore">
+        <Message
+                Text="[$(MSBuildProjectName):$(TargetFramework):$(Configuration):$(Platform)] SolutionDir = &quot;$(SolutionDir)&quot;, SolutionName = &quot;$(SolutionName)&quot;"
+                Importance="high" />
+
+        <Error Condition="'$(SolutionDir)' == '' Or '$(SolutionName)' == '' Or '$(SolutionDir)' == '*Undefined*' Or '$(SolutionName)' == '*Undefined*'"
+                Text="[$(MSBuildProjectName):$(TargetFramework):$(Configuration):$(Platform)] Individual projects cannot be built. Please build the entire solution." />
+    </Target>
+
+    <PropertyGroup>
+        <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <LangVersion>9.0</LangVersion>
+        <Nullable>disable</Nullable>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <WarningsAsErrors />
+        <RunSettingsFilePath>$(SolutionDir)$(SolutionName).runsettings</RunSettingsFilePath>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <DebugSymbols>true</DebugSymbols>
+        <DebugType>portable</DebugType>
+        <EmbedAllSources>true</EmbedAllSources>
+        <Deterministic>true</Deterministic>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <Authors>Vitalii Maklai</Authors>
+        <Company>$(Authors)</Company>
+        <Product>$(SolutionName)</Product>
+        <Description>$(Product): Provides helper and functional classes for testing with NUnit.</Description>
+        <Copyright>Copyright © $(Authors) 2013-$(BuildDateYear)</Copyright>
+        <RepositoryUrl>https://github.com/HarinezumiSama/$(SolutionName)</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
+        <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageReleaseNotes>$([System.IO.File]::ReadAllText($(ReleaseNotesFilePath)))</PackageReleaseNotes>
+        <PackageTags>nunit;test;tests;testing;omnifactotum</PackageTags>
+        <IncludeSymbols>true</IncludeSymbols>
+        <IncludeSource>true</IncludeSource>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <__RootSolutionOutputPathBase>$(SolutionDir)\.out</__RootSolutionOutputPathBase>
+        <__RootSolutionOutputPath>$([System.IO.Path]::GetFullPath($(__RootSolutionOutputPathBase)))</__RootSolutionOutputPath>
+        <OutputPath>$(__RootSolutionOutputPath)\bin\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</OutputPath>
+        <BaseIntermediateOutputPath>$(__RootSolutionOutputPath)\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+        <PackageOutputPath>$(__RootSolutionOutputPath)\NuGet\</PackageOutputPath>
+        <VSTestResultsDirectory>$(OutputPath)TestResults</VSTestResultsDirectory>
+    </PropertyGroup>
+
+    <Target Name="CleanTestResults" AfterTargets="Clean">
+        <RemoveDir Directories="$(VSTestResultsDirectory)" Condition="Exists($(VSTestResultsDirectory))" ContinueOnError="true" />
+    </Target>
+
+    <PropertyGroup>
+        <PackageVersion>$(Version)$(VersionSuffix)</PackageVersion>
+        <AssemblyVersion>$(Version).0</AssemblyVersion>
+        <FileVersion>$(Version).0</FileVersion>
+        <InformationalVersion>$(Version)$(VersionSuffix)</InformationalVersion>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(SolutionDir)' != '' And '$(SolutionName)' != ''">
+        <SignAssembly>true</SignAssembly>
+        <DelaySign>false</DelaySign>
+        <AssemblyOriginatorKeyFile>$(SolutionDir)\Common\$(SolutionName).snk</AssemblyOriginatorKeyFile>
+    </PropertyGroup>
+</Project>

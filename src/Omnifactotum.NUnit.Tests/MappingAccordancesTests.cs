@@ -42,14 +42,14 @@ namespace Omnifactotum.NUnit.Tests
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring(NullMismatchMessage));
+                    .Contains(NullMismatchMessage));
 
             Assert.That(
                 () => testee.AssertAll(null, new SampleDestination()),
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring(NullMismatchMessage));
+                    .Contains(NullMismatchMessage));
 
             Assert.That(() => testee.AssertAll(null, null), Throws.Nothing);
         }
@@ -104,7 +104,7 @@ namespace Omnifactotum.NUnit.Tests
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring(PercentageValuesMismatchMessage));
+                    .Contains(PercentageValuesMismatchMessage));
         }
 
         [Test]
@@ -136,7 +136,7 @@ namespace Omnifactotum.NUnit.Tests
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring(RemainingPropertyMismatchMessage));
+                    .Contains(RemainingPropertyMismatchMessage));
         }
 
         [Test]
@@ -165,13 +165,13 @@ namespace Omnifactotum.NUnit.Tests
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring($".{nameof(SampleSource.Name)}")
+                    .Contains($".{nameof(SampleSource.Name)}")
                     .And
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring($".{nameof(SampleDestination.FullName)}")
+                    .Contains($".{nameof(SampleDestination.FullName)}")
                     .And
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring("The values are expected to be equal:"));
+                    .Contains("The values are expected to be equal:"));
         }
 
         [Test]
@@ -200,10 +200,10 @@ namespace Omnifactotum.NUnit.Tests
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring($".{nameof(SampleInnerSource.Text)}")
+                    .Contains($".{nameof(SampleInnerSource.Text)}")
                     .And
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring($".{nameof(SampleInnerDestination.Message)}"));
+                    .Contains($".{nameof(SampleInnerDestination.Message)}"));
         }
 
         [Test]
@@ -235,13 +235,13 @@ namespace Omnifactotum.NUnit.Tests
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring($".{nameof(SampleSource.Items)}")
+                    .Contains($".{nameof(SampleSource.Items)}")
                     .And
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring($".{nameof(SampleDestination.Datas)}")
+                    .Contains($".{nameof(SampleDestination.Datas)}")
                     .And
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring(ExpectedMessagePart));
+                    .Contains(ExpectedMessagePart));
 
             var source2 = new SampleSource
             {
@@ -264,13 +264,13 @@ namespace Omnifactotum.NUnit.Tests
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring($".{nameof(SampleSource.Items)}")
+                    .Contains($".{nameof(SampleSource.Items)}")
                     .And
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring($".{nameof(SampleDestination.Datas)}")
+                    .Contains($".{nameof(SampleDestination.Datas)}")
                     .And
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring(ExpectedMessagePart));
+                    .Contains(ExpectedMessagePart));
         }
 
         [Test]
@@ -304,13 +304,13 @@ namespace Omnifactotum.NUnit.Tests
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring($".{nameof(SampleSource.Items)}")
+                    .Contains($".{nameof(SampleSource.Items)}")
                     .And
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring($".{nameof(SampleDestination.Datas)}")
+                    .Contains($".{nameof(SampleDestination.Datas)}")
                     .And
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring("The source and destination must have the same item count"));
+                    .Contains("The source and destination must have the same item count"));
         }
 
         [Test]
@@ -339,19 +339,19 @@ namespace Omnifactotum.NUnit.Tests
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring($".{nameof(SampleSource.Items)}")
+                    .Contains($".{nameof(SampleSource.Items)}")
                     .And
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring($".{nameof(SampleDestination.Datas)}")
+                    .Contains($".{nameof(SampleDestination.Datas)}")
                     .And
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring($".{nameof(SampleSourceItem.Text)}")
+                    .Contains($".{nameof(SampleSourceItem.Text)}")
                     .And
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring($".{nameof(SampleDestinationItem.TextData)}")
+                    .Contains($".{nameof(SampleDestinationItem.TextData)}")
                     .And
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring("The source and destination must have the matching item at index 0"));
+                    .Contains("The source and destination must have the matching item at index 0"));
         }
 
         [Test]
@@ -366,7 +366,7 @@ namespace Omnifactotum.NUnit.Tests
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring(NoMappingsMessage));
+                    .Contains(NoMappingsMessage));
 
             testee.RegisterNullReferenceCheck();
 
@@ -375,7 +375,7 @@ namespace Omnifactotum.NUnit.Tests
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring(NoMappingsMessage));
+                    .Contains(NoMappingsMessage));
         }
 
         [Test]
@@ -427,30 +427,30 @@ namespace Omnifactotum.NUnit.Tests
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring(SourcePrefix + nameof(SampleSource.MatchingName))
+                    .Contains(SourcePrefix + nameof(SampleSource.MatchingName))
                     .And
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring(DestinationPrefix + nameof(SampleDestination.MatchingName)));
+                    .Contains(DestinationPrefix + nameof(SampleDestination.MatchingName)));
 
             Assert.That(
                 () => testeeExplicitCaseSensitive.AssertAll(sampleSource, sampleDestination2),
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring(SourcePrefix + nameof(SampleSource.MatchingName))
+                    .Contains(SourcePrefix + nameof(SampleSource.MatchingName))
                     .And
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring(DestinationPrefix + nameof(SampleDestination.MatchingName)));
+                    .Contains(DestinationPrefix + nameof(SampleDestination.MatchingName)));
 
             Assert.That(
                 () => testeeCaseInsensitive.AssertAll(sampleSource, sampleDestination2),
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring(SourcePrefix + nameof(SampleSource.MatchingName))
+                    .Contains(SourcePrefix + nameof(SampleSource.MatchingName))
                     .And
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring(DestinationPrefix + nameof(SampleDestination.MatchingName)));
+                    .Contains(DestinationPrefix + nameof(SampleDestination.MatchingName)));
 
             var sampleDestination3 = new SampleDestination
             {
@@ -467,10 +467,10 @@ namespace Omnifactotum.NUnit.Tests
                 Throws.TypeOf<AssertionException>()
                     .With
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring(SourcePrefix + nameof(SampleSource.MatchingTextCaseInsensitive))
+                    .Contains(SourcePrefix + nameof(SampleSource.MatchingTextCaseInsensitive))
                     .And
                     .Property(nameof(AssertionException.Message))
-                    .ContainsSubstring(DestinationPrefix + nameof(SampleDestination.matchingtextcaseinsensitive)));
+                    .Contains(DestinationPrefix + nameof(SampleDestination.matchingtextcaseinsensitive)));
         }
 
         #endregion

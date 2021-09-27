@@ -1,17 +1,27 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.40629.0
-MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Omnifactotum.NUnit", "Omnifactotum.NUnit\Omnifactotum.NUnit.csproj", "{6D235396-E672-405D-824B-D91CE8C8EC99}"
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29326.143
+MinimumVisualStudioVersion = 16.0.0.0
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Omnifactotum.NUnit", "Omnifactotum.NUnit\Omnifactotum.NUnit.csproj", "{6D235396-E672-405D-824B-D91CE8C8EC99}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".build", ".build", "{78A5C9CD-08E3-4623-BBD8-06EB22485B64}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Omnifactotum.NUnit.Tests", "Omnifactotum.NUnit.Tests\Omnifactotum.NUnit.Tests.csproj", "{641D9CD0-ADAA-46B7-937C-6335F7DCC5AA}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{9B76D0C0-44E8-413E-B387-D47F53F093D3}"
 	ProjectSection(SolutionItems) = preProject
-		.build\MSBuild.Community.Tasks.dll = .build\MSBuild.Community.Tasks.dll
-		.build\MSBuild.Community.Tasks.targets = .build\MSBuild.Community.Tasks.targets
+		..\.editorconfig = ..\.editorconfig
+		..\.gitignore = ..\.gitignore
+		..\build.cmd = ..\build.cmd
+		..\build.ps1 = ..\build.ps1
+		Directory.Build.props = Directory.Build.props
+		..\LICENSE = ..\LICENSE
+		Omnifactotum.NUnit.ReleaseNotes.md = Omnifactotum.NUnit.ReleaseNotes.md
+		Omnifactotum.NUnit.runsettings = Omnifactotum.NUnit.runsettings
+		Omnifactotum.NUnit.sln.DotSettings = Omnifactotum.NUnit.sln.DotSettings
+		Common\Omnifactotum.NUnit.snk = Common\Omnifactotum.NUnit.snk
+		..\README.md = ..\README.md
+		Settings.StyleCop = Settings.StyleCop
 	EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Omnifactotum.NUnit.Tests", "Omnifactotum.NUnit.Tests\Omnifactotum.NUnit.Tests.csproj", "{641D9CD0-ADAA-46B7-937C-6335F7DCC5AA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -30,5 +40,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {04302812-1A12-4DD3-8305-3D446B731738}
 	EndGlobalSection
 EndGlobal

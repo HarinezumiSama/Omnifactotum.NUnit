@@ -1,144 +1,30 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{6D235396-E672-405D-824B-D91CE8C8EC99}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Omnifactotum.NUnit</RootNamespace>
-    <AssemblyName>Omnifactotum.NUnit</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>..\SolutionItems\Omnifactotum.NUnit.snk</AssemblyOriginatorKeyFile>
-    <DelaySign>true</DelaySign>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>..\..\bin\AnyCpu\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <UseVSHostingProcess>false</UseVSHostingProcess>
-    <DocumentationFile>..\..\bin\AnyCpu\Debug\Omnifactotum.NUnit.xml</DocumentationFile>
-    <Prefer32Bit>false</Prefer32Bit>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>..\..\bin\AnyCpu\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <UseVSHostingProcess>false</UseVSHostingProcess>
-    <DocumentationFile>..\..\bin\AnyCpu\Release\Omnifactotum.NUnit.xml</DocumentationFile>
-    <Prefer32Bit>false</Prefer32Bit>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="nunit.framework, Version=2.6.4.14350, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
-      <HintPath>..\packages\NUnit.2.6.4\lib\nunit.framework.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Omnifactotum, Version=0.3.0.119, Culture=neutral, PublicKeyToken=463364b83539fcba, processorArchitecture=MSIL">
-      <HintPath>..\packages\Omnifactotum.0.3.0.119\lib\net40-Client\Omnifactotum.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="Microsoft.CSharp" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="AssertEqualityExpectation.cs" />
-    <Compile Include="ConstraintCreator.cs" />
-    <Compile Include="GenericTestCasesBase.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <None Include="..\SolutionItems\Omnifactotum.NUnit.snk">
-      <Link>Properties\Omnifactotum.NUnit.snk</Link>
-    </None>
-    <Compile Include="..\SolutionItems\CommonAssemblyInfo.cs">
-      <Link>Properties\CommonAssemblyInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\SolutionItems\Generated.GlobalVersion.cs">
-      <Link>Properties\Generated.GlobalVersion.cs</Link>
-    </Compile>
-    <Compile Include="PropertyAccessMode.cs" />
-    <Compile Include="MappingAccordances.cs" />
-    <Compile Include="MappingAccordances.Helper.cs" />
-    <Compile Include="TestCasesBase.cs" />
-    <Compile Include="NUnitFactotum.cs" />
-    <None Include="Omnifactotum.NUnit.nuspec" />
-    <None Include="packages.config" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>"$(ProjectDir)\..\SolutionItems\sign.cmd" "$(TargetPath)" || exit /b 1</PostBuildEvent>
-  </PropertyGroup>
-  <PropertyGroup>
-    <CompileDependsOn>UpdateGlobalVersion;$(CompileDependsOn)</CompileDependsOn>
-    <!--CleanDependsOn>UpdateGlobalVersion;$(CleanDependsOn)</CleanDependsOn-->
-    <BuildDependsOn>UpdateGlobalVersion;$(BuildDependsOn)</BuildDependsOn>
-  </PropertyGroup>
-  <PropertyGroup>
-    <MSBuildCommunityTasksPath>$(SolutionDir)\.build</MSBuildCommunityTasksPath>
-  </PropertyGroup>
-  <Import Project="$(MSBuildCommunityTasksPath)\MSBuild.Community.Tasks.targets" />
-  <Target Name="UpdateGlobalVersion">
+
+<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-      <BaseVersionFile>$(ProjectDir)\..\SolutionItems\BaseVersion.txt</BaseVersionFile>
-      <RevisionFile>$(ProjectDir)\..\SolutionItems\Generated.Revision.txt</RevisionFile>
-      <RevisionIdFile>$(ProjectDir)\..\SolutionItems\Generated.RevisionId.txt</RevisionIdFile>
+        <TargetFrameworks>net40;net461;net472;netstandard2.0;netstandard2.1;net5.0</TargetFrameworks>
     </PropertyGroup>
-    <Message Importance="high" Text="* Reading base version from '$(BaseVersionFile)'..." />
-    <ReadLinesFromFile File="$(BaseVersionFile)">
-      <Output TaskParameter="Lines" PropertyName="BaseVersion" />
-    </ReadLinesFromFile>
-    <Message Importance="high" Text="* Base version: '$(BaseVersion)'" />
-    <Exec Command="&quot;$(ProjectDir)\..\SolutionItems\hg.cmd&quot; identify --num &gt;&quot;$(RevisionFile)&quot;" />
-    <Exec Command="&quot;$(ProjectDir)\..\SolutionItems\hg.cmd&quot; identify --id &gt;&quot;$(RevisionIdFile)&quot;" />
-    <Message Importance="high" Text="* Reading HG revision number from '$(RevisionFile)'..." />
-    <ReadLinesFromFile File="$(RevisionFile)">
-      <Output TaskParameter="Lines" PropertyName="RevisionRaw" />
-    </ReadLinesFromFile>
-    <RegexReplace Input="$(RevisionRaw)" Expression="\+" Replacement="" Count="1">
-      <Output PropertyName="Revision" TaskParameter="Output" />
-    </RegexReplace>
-    <Message Importance="high" Text="* Revision number: '$(Revision)' (raw '$(RevisionRaw)')." />
+
     <PropertyGroup>
-      <GlobalVersion>$(BaseVersion).0.$(Revision)</GlobalVersion>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
-    <Message Importance="high" Text="* Reading HG revision ID from '$(RevisionIdFile)'..." />
-    <ReadLinesFromFile File="$(RevisionIdFile)">
-      <Output TaskParameter="Lines" PropertyName="RevisionId" />
-    </ReadLinesFromFile>
-    <Message Importance="high" Text="* Revision ID: '$(RevisionId)'" />
+
     <ItemGroup>
-      <AssemblyVersion Include="global::System.Reflection.AssemblyVersion">
-        <_Parameter1>$(GlobalVersion)</_Parameter1>
-      </AssemblyVersion>
-      <AssemblyFileVersion Include="global::System.Reflection.AssemblyFileVersion">
-        <_Parameter1>$(GlobalVersion)</_Parameter1>
-      </AssemblyFileVersion>
-      <AssemblyInformationalVersion Include="global::System.Reflection.AssemblyInformationalVersion">
-        <_Parameter1>$(GlobalVersion) (rev. $(RevisionId))</_Parameter1>
-      </AssemblyInformationalVersion>
+        <PackageReference Include="NUnit" Version="[3.12.0,)" />
+        <PackageReference Include="Omnifactotum" Version="0.5.0" />
     </ItemGroup>
-    <WriteCodeFragment Language="C#" OutputFile="$(ProjectDir)\..\SolutionItems\Generated.GlobalVersion.cs" AssemblyAttributes="@(AssemblyVersion);@(AssemblyFileVersion);@(AssemblyInformationalVersion)" />
-  </Target>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
+    <PropertyGroup>
+        <EnableDefaultItems>false</EnableDefaultItems>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="**/*.cs" Exclude="**/obj/**" />
+        <None Include="**/*.md" />
+
+        <None Include="..\Common\Omnifactotum.NUnit.snk">
+            <Link>Properties\Omnifactotum.NUnit.snk</Link>
+        </None>
+    </ItemGroup>
 </Project>
