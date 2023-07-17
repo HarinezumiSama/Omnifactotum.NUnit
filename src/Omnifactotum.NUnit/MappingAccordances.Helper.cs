@@ -167,7 +167,11 @@ namespace Omnifactotum.NUnit
                 || type == typeof(DateTimeOffset);
 
         private static bool IsSimpleNullableTypeInternal([NotNull] this Type type)
+#if NET40
             => type.IsNullable() && Nullable.GetUnderlyingType(type).EnsureNotNull().IsSimpleTypeInternal();
+#else
+            => type.IsNullableValueType() && Nullable.GetUnderlyingType(type).EnsureNotNull().IsSimpleTypeInternal();
+#endif
 
         /// <summary>
         ///     Provides the fluid syntax of creating instances of the

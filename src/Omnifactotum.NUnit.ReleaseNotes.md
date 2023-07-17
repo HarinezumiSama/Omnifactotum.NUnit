@@ -1,3 +1,17 @@
+### Changes in 0.2.0 (since 0.1.0.13)
+
+#### Breaking Changes
+
+- . . .
+
+#### New features
+
+- . . .
+
+#### Minor updates and fixes
+
+- . . .
+
 ### Changes in 0.1.0.13 (since 0.1.0.7)
 - `MappingAccordances<TSource, TDestination>`: Source and/or destination values can be null; an optional null reference check can be registered.
 - Introduced the `GenericTestCasesBase<T>` class and made it the ancestor of `TestCasesBase`

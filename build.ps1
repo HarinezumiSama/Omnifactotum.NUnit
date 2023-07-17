@@ -14,9 +14,11 @@ using namespace System.Xml.Linq
 param
 (
     [Parameter()]
+    [ValidateSet('Debug', 'Release')]
     [string] $BuildConfiguration = 'Debug',
 
     [Parameter()]
+    [ValidateSet('Any CPU')]
     [string] $BuildPlatform = 'Any CPU',
 
     [Parameter()]
@@ -47,6 +49,11 @@ param
     [Parameter()]
     [AllowNull()]
     [AllowEmptyString()]
+    [string] $AppveyorSourceCodeBranch = $null,
+
+    [Parameter()]
+    [AllowNull()]
+    [AllowEmptyString()]
     [string] $AppveyorBuildNumber = $null,
 
     [Parameter()]
@@ -73,6 +80,54 @@ begin
     [ValidateNotNullOrEmpty()] [string] $workspaceRootDirectoryPath = $PSScriptRoot
     [string] $solutionFilePattern = '*.sln'
     [string] $buildPropsFilePattern = 'Directory.Build.props'
+    [string] $projectPlatform = 'AnyCPU'
+
+    class FileXmlData
+    {
+        [string] $FilePath
+        [xml] $Document
+
+        FileXmlData([string] $filePath)
+        {
+            if ([string]::IsNullOrWhiteSpace($filePath))
+            {
+                throw [ArgumentException]::new('The file path cannot be blank.', 'filePath')
+            }
+
+            [xml] $xmlDocument = [xml]::new()
+            $xmlDocument.Load($filePath) | Out-Null
+
+            $this.FilePath = $filePath
+            $this.Document = $xmlDocument
+        }
+
+        [string] GetSingleNodeText([string] $xPath)
+        {
+            if ([string]::IsNullOrWhiteSpace($xPath))
+            {
+                throw [ArgumentException]::new('The XPath cannot be blank.', 'xPath')
+            }
+
+            [XmlElement[]] $elements = @($this.Document.SelectNodes($xPath))
+            if ($elements.Count -ne 1)
+            {
+                throw "There must be exactly one element matching XPath ""$xPath"" in ""$($this.FilePath)"", but found: $($elements.Count)."
+            }
+
+            [XmlElement] $element = $elements[0]
+            return $element.InnerText
+        }
+
+        [string] GetProjectPropertyText([string] $propertyName)
+        {
+            if ([string]::IsNullOrWhiteSpace($propertyName))
+            {
+                throw [ArgumentException]::new('The property name cannot be blank.', 'propertyName')
+            }
+
+            return $this.GetSingleNodeText("/Project/PropertyGroup/$propertyName")
+        }
+    }
 
     function Get-ErrorDetails([ValidateNotNull()] [System.Management.Automation.ErrorRecord] $errorRecord = $_)
     {
@@ -291,8 +346,7 @@ begin
 
             if ($allFoundFilePaths.Count -ne 1)
             {
-                throw ("There must be exactly one file matching ""$Pattern"" within ""$workspaceRootDirectoryPath""" `
-                    + ", but found: $($allFoundFilePaths.Count).")
+                throw "There must be exactly one file matching ""$Pattern"" within ""$workspaceRootDirectoryPath"", but found: $($allFoundFilePaths.Count)."
             }
 
             return $allFoundFilePaths[0]
@@ -304,6 +358,7 @@ process
     [Console]::ResetColor()
     Write-MajorSeparator
 
+    [Stopwatch] $entireBuildStopwatch = [Stopwatch]::StartNew()
     try
     {
         Write-Host -ForegroundColor Green "BuildConfiguration: ""$BuildConfiguration"""
@@ -318,6 +373,7 @@ process
             Write-Host -ForegroundColor Green "AppveyorBinariesSubdirectory: ""$AppveyorBinariesSubdirectory"""
             Write-Host -ForegroundColor Green "AppveyorNuGetPackageSubdirectory: ""$AppveyorNuGetPackageSubdirectory"""
             Write-Host -ForegroundColor Green "AppveyorSourceCodeRevisionId: ""$AppveyorSourceCodeRevisionId"""
+            Write-Host -ForegroundColor Green "AppveyorSourceCodeBranch: ""$AppveyorSourceCodeBranch"""
             Write-Host -ForegroundColor Green "AppveyorBuildNumber: ""$AppveyorBuildNumber"""
             Write-Host -ForegroundColor Green "AppveyorOriginalBuildVersion: ""$AppveyorOriginalBuildVersion"""
             Write-Host -ForegroundColor Green "AppveyorDeployFlagVariableName: ""$AppveyorDeploymentFlagVariableName"""
@@ -383,6 +439,12 @@ process
                     "The specified source code revision ID ""$AppveyorSourceCodeRevisionId"" is invalid.",
                     'AppveyorSourceCodeRevisionId')
             }
+            if ([string]::IsNullOrWhiteSpace($AppveyorSourceCodeBranch))
+            {
+                throw [ArgumentException]::new(
+                    'The Appveyor source code branch cannot be blank when the AppveyorBuild switch is ON.',
+                    'AppveyorSourceCodeBranch')
+            }
             if ([string]::IsNullOrWhiteSpace($AppveyorBuildNumber))
             {
                 throw [ArgumentException]::new(
@@ -420,24 +482,60 @@ process
             $sevenZipExecutablePath = Get-ApplicationPath -Verbose -Name '7z.exe'
         }
 
+        function Execute-SevenZip
+        {
+            [CmdletBinding(PositionalBinding = $false)]
+            param
+            (
+                [Parameter()]
+                [ValidateNotNullOrEmpty()]
+                [string] $Description = $([ArgumentNullException]::new('Description')),
+
+                [Parameter()]
+                [ValidateNotNullOrEmpty()]
+                [string] $ArchiveFilePath = $([ArgumentNullException]::new('ArchiveFilePath')),
+
+                [Parameter(ValueFromRemainingArguments = $true)]
+                [ValidateNotNullOrEmpty()]
+                [string[]] $Items = $([ArgumentNullException]::new('Items'))
+            )
+            process
+            {
+                if ([string]::IsNullOrWhiteSpace($sevenZipExecutablePath))
+                {
+                    throw '7-Zip executable path is not assigned.'
+                }
+
+                [string[]] $processedItems = @($Items | % { """$_""" })
+
+                Execute-Command `
+                    -Verbose `
+                    -Title "* 7-Zip: Archive $Description" `
+                    -Command $sevenZipExecutablePath `
+                    -CommandArguments `
+                        (
+                            @(
+                                'a'
+                                '-y'
+                                '-tzip'
+                                '-r'
+                                '-mx1'
+                                '-bd'
+                                """$ArchiveFilePath"""
+                                '--'
+                            ) `
+                            + $processedItems
+                        )
+            }
+        }
+
         [ValidateNotNullOrEmpty()] [string] $solutionFilePath = $solutionFilePattern | Find-SingleFileInWorkspace
         [ValidateNotNullOrEmpty()] [string] $solutionDirectoryPath = [Path]::GetDirectoryName($solutionFilePath)
         [ValidateNotNullOrEmpty()] [string] $solutionNameOnly = [Path]::GetFileNameWithoutExtension($solutionFilePath)
 
         [ValidateNotNullOrEmpty()] [string] $buildPropsFilePath = $buildPropsFilePattern | Find-SingleFileInWorkspace
-        [xml] $buildPropsFileXml = [xml](Get-Content -Raw -LiteralPath $buildPropsFilePath)
-
-        [string] $versionElementPath = '/Project/PropertyGroup/Version'
-
-        [XmlElement[]] $versionElements = @($buildPropsFileXml.SelectNodes($versionElementPath))
-        if ($versionElements.Count -ne 1)
-        {
-            throw ("There must be exactly one element matching XPath ""$versionElementPath"" in ""$buildPropsFilePath""" `
-                + ", but found: $($versionElements.Count).")
-        }
-
-        [XmlElement] $versionElement = $versionElements[0]
-        [string] $versionString = $versionElement.InnerText
+        [FileXmlData] $buildPropsFileXmlData = [FileXmlData]::new($buildPropsFilePath)
+        [string] $versionString = $buildPropsFileXmlData.GetProjectPropertyText('Version')
 
         [version] $version = $null
         if (![version]::TryParse($versionString, [ref] $version) -or $version.Revision -ge 0)
@@ -485,11 +583,34 @@ process
                 -Version "v$($version): $AppveyorOriginalBuildVersion"
 
             Set-AppveyorBuildVariable `
+                -Verbose `
                 -Name $AppveyorDeploymentVersionVariableName `
                 -Value "v$version [build $resolvedBuildNumber] [$dateStamp]"
         }
 
-        [string] $dotNetCliPath = Get-ApplicationPath -Verbose -Name dotnet
+        [ValidateNotNullOrEmpty()] [string] $testProjectFileNameOnly = "$solutionNameOnly.Tests"
+        [ValidateNotNullOrEmpty()] [string] $testProjectFilePath = [Path]::Combine($solutionDirectoryPath, $testProjectFileNameOnly, "$testProjectFileNameOnly.csproj")
+
+        [FileXmlData] $testProjectFileXmlData = [FileXmlData]::new($testProjectFilePath)
+        [string] $targetFrameworksString = $testProjectFileXmlData.GetProjectPropertyText('TargetFrameworks')
+
+        [string[]] $testFrameworks = $targetFrameworksString -csplit ';'
+        if ($testFrameworks.Count -eq 0)
+        {
+            throw "No target frameworks defined in ""$testProjectFilePath"" at ""$targetFrameworksElementPath""."
+        }
+
+        [string] $temporaryDirectoryPath = [Path]::GetFullPath([Path]::Combine($PSScriptRoot, '.temp'))
+        Ensure-CleanDirectory -LiteralPath $temporaryDirectoryPath
+
+        Write-MajorSeparator
+        [ValidateNotNullOrEmpty()] [string] $dotNetCliPath = Get-ApplicationPath -Verbose -Name dotnet
+
+        Write-MajorSeparator
+        Execute-Command -Title '* DotNet CLI Version' -Command $dotNetCliPath -CommandArguments '--version'
+
+        Write-MajorSeparator
+        Execute-Command -Title '* DotNet SDKs' -Command $dotNetCliPath -CommandArguments '--list-sdks'
 
         function Create-DotNetCliExecuteCommandParameters
         {
@@ -576,9 +697,6 @@ process
             }
         }
 
-        [string] $temporaryDirectoryPath = [Path]::GetFullPath([Path]::Combine($PSScriptRoot, '.temp'))
-        Ensure-CleanDirectory -LiteralPath $temporaryDirectoryPath
-
         [string] $coverageOutputDirectoryPath = $null
         if ($EnableDotCover)
         {
@@ -599,63 +717,111 @@ process
 
         Execute-DotNetCli build @dotNetBuildCommandArguments
 
+        [string] $archiveVersionSuffix = $null
         if ($AppveyorBuild)
         {
-            [string] $archiveVersionSuffix = "-v$($version).$($resolvedBuildNumber)$($PrereleaseSuffix).rev-$($shortRevisionId)"
-            [string] $binariesDirectoryPath = $AppveyorBinariesSubdirectory | Resolve-WorkspacePath
-            [string] $binariesArchiveFilePath = "$resolvedArtifactsDirectoryPath\$($solutionNameOnly).bin$($archiveVersionSuffix).zip"
+            $archiveVersionSuffix = "-v$($version).$($resolvedBuildNumber)$($PrereleaseSuffix).rev-$($shortRevisionId)"
 
-            Execute-Command `
-                -Verbose `
-                -Title '* Archive binaries' `
-                -Command $sevenZipExecutablePath `
-                -CommandArguments `
-                    @(
-                        'a'
-                        '-y'
-                        '-tzip'
-                        '-r'
-                        '-mx1'
-                        '-bd'
-                        """$binariesArchiveFilePath"""
-                        '--'
-                        """$binariesDirectoryPath\*.*"""
-                    )
+            [string] $binariesBaseDirectoryPath = $AppveyorBinariesSubdirectory | Resolve-WorkspacePath
+            [string] $binariesDirectoryPath = [Path]::Combine($binariesBaseDirectoryPath, $projectPlatform, $BuildConfiguration)
+            [string] $binariesArchiveFilePath = "$resolvedArtifactsDirectoryPath\$($solutionNameOnly).Binaries$($archiveVersionSuffix).zip"
 
-            [string] $packageId = $solutionNameOnly.ToLowerInvariant()
+            Write-MajorSeparator
+
+            Execute-SevenZip `
+                -Description 'Binaries' `
+                -ArchiveFilePath $binariesArchiveFilePath `
+                -Items "$binariesDirectoryPath\*.*"
+
+            Write-MajorSeparator
+
+            [string] $packageId = $solutionNameOnly
 
             [psobject] $publishedPackageInfo = Invoke-RestMethod `
+                -Verbose `
                 -UseBasicParsing `
                 -Method Get `
-                -Uri "https://api.nuget.org/v3/registration5-gz-semver2/$([WebUtility]::UrlEncode($packageId))/index.json"
+                -Uri "https://api.nuget.org/v3/registration5-gz-semver2/$([WebUtility]::UrlEncode($packageId.ToLowerInvariant()))/index.json"
 
-            [version] $latestPublishedPackageVersion = [version]::new(0, 0)
-            foreach ($packageInfoItem in $publishedPackageInfo.items)
+            [bool] $isPatchBranch = $AppveyorSourceCodeBranch -cmatch '^patch\/v(?<major>\d+)\.(?<minor>\d+)\.x$'
+
+            [bool] $shouldCopyPackageToArtifacts = $false
+            if ($isPatchBranch)
             {
-                [ValidateNotNullOrEmpty()] [string] $itemUpperVersionString = $packageInfoItem.upper
-                [version] $itemUpperVersion = [version]::Parse($itemUpperVersionString)
-                if ($latestPublishedPackageVersion -lt $itemUpperVersion)
+                [version] $packagePatchVersionBase = [version]::new([int]$Matches['major'], [int]$Matches['minor'], 0)
+                Write-Host "Patch version base: ""$packagePatchVersionBase""."
+
+                [version] $latestPublishedPatchVersion = $packagePatchVersionBase
+                foreach ($packageInfoItem in $publishedPackageInfo.items)
                 {
-                    $latestPublishedPackageVersion = $itemUpperVersion
+                    foreach ($packageInfoSubitem in $packageInfoItem.items)
+                    {
+                        [ValidateNotNullOrEmpty()] [string] $itemVersionString = $packageInfoSubitem.catalogEntry.version
+                        [version] $itemVersion = [version]::Parse($itemVersionString)
+                        if ($itemVersion.Major -eq $packagePatchVersionBase.Major -and $itemVersion.Minor -eq $packagePatchVersionBase.Minor)
+                        {
+                            if ($latestPublishedPatchVersion -lt $itemVersion)
+                            {
+                                $latestPublishedPatchVersion = $itemVersion
+                            }
+                        }
+                    }
                 }
-            }
 
-            if ($latestPublishedPackageVersion -ge $version)
-            {
-                Write-Warning `
-                    -WarningAction Continue `
-                    -Message ("The current package version is ""$version""" `
-                        + ", but the version ""$latestPublishedPackageVersion"" is already published" `
-                        + ". Skipping to publish the NuGet package ""$packageId"".")
+                Write-Host "The current package version is ""$version""."
+                Write-Host "The latest published PATCH version is ""$latestPublishedPatchVersion""."
 
-                Set-AppveyorBuildVariable -Name $AppveyorDeploymentFlagVariableName -Value 'false'
-                Set-AppveyorBuildVariable -Name $AppveyorDeploymentVersionVariableName -Value ([string]::Empty)
+                if ($latestPublishedPatchVersion -lt $version)
+                {
+                    $shouldCopyPackageToArtifacts = $true
+                }
+                else
+                {
+                    Write-Warning `
+                        -WarningAction Continue `
+                        -Message ("The current package version is ""$version""" `
+                            + ", but the PATCH version ""$latestPublishedPatchVersion"" is already published" `
+                            + ". Skipping to publish the NuGet package ""$packageId"".")
+
+                    Set-AppveyorBuildVariable -Verbose -Name $AppveyorDeploymentFlagVariableName -Value 'false'
+                    Set-AppveyorBuildVariable -Verbose -Name $AppveyorDeploymentVersionVariableName -Value ([string]::Empty)
+                }
             }
             else
             {
+                [version] $latestPublishedPackageVersion = [version]::new(0, 0)
+                foreach ($packageInfoItem in $publishedPackageInfo.items)
+                {
+                    [ValidateNotNullOrEmpty()] [string] $itemVersionString = $packageInfoItem.upper
+                    [version] $itemVersion = [version]::Parse($itemVersionString)
+                    if ($latestPublishedPackageVersion -lt $itemVersion)
+                    {
+                        $latestPublishedPackageVersion = $itemVersion
+                    }
+                }
+
                 Write-Host "The current package version is ""$version""."
                 Write-Host "The latest published package version is ""$latestPublishedPackageVersion""."
 
+                if ($latestPublishedPackageVersion -lt $version)
+                {
+                    $shouldCopyPackageToArtifacts = $true
+                }
+                else
+                {
+                    Write-Warning `
+                        -WarningAction Continue `
+                        -Message ("The current package version is ""$version""" `
+                            + ", but the version ""$latestPublishedPackageVersion"" is already published" `
+                            + ". Skipping to publish the NuGet package ""$packageId"".")
+
+                    Set-AppveyorBuildVariable -Verbose -Name $AppveyorDeploymentFlagVariableName -Value 'false'
+                    Set-AppveyorBuildVariable -Verbose -Name $AppveyorDeploymentVersionVariableName -Value ([string]::Empty)
+                }
+            }
+
+            if ($shouldCopyPackageToArtifacts)
+            {
                 [string] $nuGetPackageDirectoryPath = $AppveyorNuGetPackageSubdirectory | Resolve-WorkspacePath
 
                 Copy-Item `
@@ -667,8 +833,7 @@ process
             }
         }
 
-        # TODO: Autodiscover from the *.Tests project(s)
-        [string[]] $testFrameworks = @('net40', 'net461', 'net472', 'netcoreapp2.1', 'netcoreapp3.1', 'net5.0')
+        [string] $snapshotFileBaseName = "$([Path]::GetFileNameWithoutExtension($solutionFilePath)).CoverageResult"
 
         foreach ($testFramework in $testFrameworks)
         {
@@ -708,12 +873,12 @@ process
                 $dotCoverExecutablePath = Get-ApplicationPath -Verbose -Name $dotCoverExecutableName -ErrorAction SilentlyContinue
                 if ([string]::IsNullOrEmpty($dotCoverExecutablePath))
                 {
+                    Write-MajorSeparator
+
                     [string] $chocolateyExecutablePath = Get-ApplicationPath -Verbose -Name 'choco.exe'
                     Execute-Command -Title 'Install dotCover CLI' $chocolateyExecutablePath install --yes --no-progress dotcover-cli
                     $dotCoverExecutablePath = Get-ApplicationPath -Verbose -Name $dotCoverExecutableName
                 }
-
-                [string] $snapshotFileBaseName = "$([Path]::GetFileNameWithoutExtension($solutionFilePath)).CoverageResult"
 
                 $coverageSnapshotFilePath = [Path]::Combine(
                     $coverageOutputDirectoryPath,
@@ -820,6 +985,35 @@ process
         }
 
         Write-MajorSeparator
+
+        if ($AppveyorBuild)
+        {
+            [string] $testResultsSubdirectory = $buildPropsFileXmlData.GetProjectPropertyText('__TestResultsSubdirectory')
+
+            [string] $binariesDirectoryPath = $AppveyorBinariesSubdirectory | Resolve-WorkspacePath
+            [string] $testResultsDirectoryPath = [Path]::Combine($binariesDirectoryPath, $projectPlatform, $BuildConfiguration, $testProjectFileNameOnly, $testResultsSubdirectory)
+            [string] $testResultsArchiveFilePath = "$resolvedArtifactsDirectoryPath\$($solutionNameOnly).$($testResultsSubdirectory)$($archiveVersionSuffix).zip"
+
+            Execute-SevenZip `
+                -Description 'Test Results' `
+                -ArchiveFilePath $testResultsArchiveFilePath `
+                -Items "$testResultsDirectoryPath\*.*"
+
+            Write-MajorSeparator
+
+            if ($EnableDotCover)
+            {
+                [string] $coverageResultDirectoryPath = [Path]::Combine($coverageOutputDirectoryPath, $snapshotFileBaseName)
+                [string] $coverageResultArchiveFilePath = "$resolvedArtifactsDirectoryPath\$($snapshotFileBaseName)$($archiveVersionSuffix).zip"
+
+                Execute-SevenZip `
+                    -Description 'Coverage Results' `
+                    -ArchiveFilePath $coverageResultArchiveFilePath `
+                    -Items "$coverageResultDirectoryPath\*.*"
+
+                Write-MajorSeparator
+            }
+        }
     }
     catch
     {
@@ -830,5 +1024,10 @@ process
         Write-MajorSeparator
 
         throw
+    }
+    finally
+    {
+        Write-Host -ForegroundColor Cyan "* Total build time: $($entireBuildStopwatch.Elapsed)"
+        Write-MajorSeparator
     }
 }

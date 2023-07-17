@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
+<!--suppress XmlUnusedNamespaceDeclaration -->
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <Suppression>
+        <DiagnosticId>CP0001</DiagnosticId>
+        <Target>T:Omnifactotum.NUnit.MappingAccordances.AssertionFailedMessageCreator`1</Target>
+        <Left>lib/net40/Omnifactotum.NUnit.dll</Left>
+        <Right>lib/net40/Omnifactotum.NUnit.dll</Right>
+        <IsBaselineSuppression>true</IsBaselineSuppression>
+    </Suppression>
+    <Suppression>
+        <DiagnosticId>CP0002</DiagnosticId>
+        <Target>M:Omnifactotum.NUnit.MappingAccordances`2.Register``1(System.Linq.Expressions.Expression{System.Func{`0,``0}},System.Linq.Expressions.Expression{System.Func{`1,``0}},Omnifactotum.NUnit.ConstraintCreator{``0},Omnifactotum.NUnit.MappingAccordances.AssertionFailedMessageCreator{``0})</Target>
+        <Left>lib/net40/Omnifactotum.NUnit.dll</Left>
+        <Right>lib/net40/Omnifactotum.NUnit.dll</Right>
+        <IsBaselineSuppression>true</IsBaselineSuppression>
+    </Suppression>
+    <Suppression>
+        <DiagnosticId>CP0002</DiagnosticId>
+        <Target>M:Omnifactotum.NUnit.NUnitFactotum.AssertEquality``1(``0,``0,Omnifactotum.NUnit.AssertEqualityExpectation)</Target>
+        <Left>lib/net40/Omnifactotum.NUnit.dll</Left>
+        <Right>lib/net40/Omnifactotum.NUnit.dll</Right>
+        <IsBaselineSuppression>true</IsBaselineSuppression>
+    </Suppression>
+    <Suppression>
+        <DiagnosticId>CP0002</DiagnosticId>
+        <Target>M:Omnifactotum.NUnit.NUnitFactotum.AssertNotNull``1(``0)</Target>
+        <Left>lib/net40/Omnifactotum.NUnit.dll</Left>
+        <Right>lib/net40/Omnifactotum.NUnit.dll</Right>
+        <IsBaselineSuppression>true</IsBaselineSuppression>
+    </Suppression>
+    <Suppression>
+        <DiagnosticId>CP0002</DiagnosticId>
+        <Target>M:Omnifactotum.NUnit.NUnitFactotum.AssertNotNull``1(System.Nullable{``0})</Target>
+        <Left>lib/net40/Omnifactotum.NUnit.dll</Left>
+        <Right>lib/net40/Omnifactotum.NUnit.dll</Right>
+        <IsBaselineSuppression>true</IsBaselineSuppression>
+    </Suppression>
+</Suppressions>

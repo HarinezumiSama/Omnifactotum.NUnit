@@ -6,13 +6,31 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <EnablePackageValidation>true</EnablePackageValidation>
+        <!-- Set `GenerateCompatibilitySuppressionFile` to `true` to regenerate "CompatibilitySuppressions.xml"; then set back to `false` -->
+        <GenerateCompatibilitySuppressionFile>false</GenerateCompatibilitySuppressionFile>
+    </PropertyGroup>
+
     <ItemGroup>
-        <PackageReference Include="NUnit" Version="[3.12.0,)" />
-        <PackageReference Include="Omnifactotum" Version="0.5.0" />
+        <PackageReference Include="NUnit" Version="[3.12.0,)"/>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetFramework)'=='net40'">
+        <PackageReference Include="Omnifactotum" Version="[0.6.0,0.7.0)"/>
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetFramework)'=='net461'">
+        <PackageReference Include="Omnifactotum" Version="[0.11.0,0.12.0)"/>
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetFramework)'=='net472' or '$(TargetFramework)'=='netstandard2.0'">
+        <PackageReference Include="Omnifactotum" Version="[0.13.0,0.14.0)"/>
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetFramework)'=='netstandard2.1' or '$(TargetFramework)'=='net5.0'">
+        <PackageReference Include="Omnifactotum" Version="[0.16.0,)"/>
     </ItemGroup>
 
     <PropertyGroup>
@@ -20,11 +38,25 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Include="**/*.cs" Exclude="**/obj/**" />
-        <None Include="**/*.md" />
+        <Compile Include="**/*.cs" Exclude="**/obj/**"/>
+
+        <Compile Include="..\Common\AssemblyInfo.Common.cs">
+            <Link>Properties\AssemblyInfo.Common.cs</Link>
+        </Compile>
+
+        <None Include="**/*.md"/>
 
         <None Include="..\Common\Omnifactotum.NUnit.snk">
             <Link>Properties\Omnifactotum.NUnit.snk</Link>
         </None>
+
+        <None Include="CompatibilitySuppressions.xml"/>
     </ItemGroup>
+
+    <ItemGroup>
+        <None Include="$(SolutionDir)\..\README.NuGet.md" Pack="true" PackagePath="\"/>
+    </ItemGroup>
+    <PropertyGroup>
+        <PackageReadmeFile>README.NuGet.md</PackageReadmeFile>
+    </PropertyGroup>
 </Project>

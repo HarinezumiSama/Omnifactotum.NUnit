@@ -21,6 +21,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{9B76D0
 		Common\Omnifactotum.NUnit.snk = Common\Omnifactotum.NUnit.snk
 		..\README.md = ..\README.md
 		Settings.StyleCop = Settings.StyleCop
+		..\README.NuGet.md = ..\README.NuGet.md
 	EndProjectSection
 EndProject
 Global
