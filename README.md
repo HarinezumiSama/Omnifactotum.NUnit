@@ -1,6 +1,6 @@
 ﻿# Omnifactotum.NUnit
 
-Provides helper and functional classes for testing with NUnit.
+Provides helper and functional classes for testing with `NUnit`.
 
 **Note**: `Factotum` is a Latin word literally meaning "*do everything*" (that is, a *handyman* or *Jack-of-all-trades*).
 
